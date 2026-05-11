@@ -1,12 +1,16 @@
 // MÓDULO: main.js
 // Punto de entrada. Inicializa la aplicación.
 
+import { renderRoute } from './router/router.js';
 import { registrarEventListeners }          from './services/tareasService.js';
 import { mostrarEstadoVacio }               from './ui/tareasUI.js';
 // MODIFICAR la importación al inicio del archivo — agregar activarModoInstructor:
 import { activarModoInicio, activarModoAdmin, activarModoUsuario, activarModoInstructor } from './ui/modoUI.js';
 import { API_BASE_URL }                     from './utils/config.js';
 import { haySesionActiva, obtenerUsuarioSesion } from './utils/sesion.js';
+
+// Inicializar el enrutador SPA con la ruta actual
+renderRoute(window.location.pathname);
 
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Sistema de Gestión de Tareas — SENA');
