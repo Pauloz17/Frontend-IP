@@ -1,6 +1,6 @@
 # Parte 4: Informe de Validación Técnica y Reflexión
 
-**Autores:** Karol Nicolle Torres Fuentes, Juan Sebastian Patiño Hernandez  
+**Autores:** Paulo Zapata y Ana Isabella
 **Institución:** SENA – Técnico en Programación de Software  
 **Fecha:** 19-02-2026
 

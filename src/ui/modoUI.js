@@ -716,7 +716,7 @@ async function abrirModalEditarUsuario(usuario) {
     inputNombre.type        = 'text';
     inputNombre.id          = 'editar-usuario-nombre';
     inputNombre.className   = 'form__input';
-    inputNombre.placeholder = 'Ej: Karol Torres';
+    inputNombre.placeholder = 'Ej: Paulo Zapata';
     // Se pre-rellena con el valor actual del usuario
     inputNombre.value       = usuario.name || '';
     grupoNombre.appendChild(labelNombre);
@@ -1285,7 +1285,7 @@ function registrarCardsContraibles() {
     const pares = [
         ['toggleUsuarios',     'cuerpoUsuarios'],
         ['toggleTareas',       'cuerpoTareas'],
-        // La card de crear tareas se agrega aquí cuando Sebastián la cree
+        // La card de crear tareas se agrega aquí cuando Ana Isabella la cree
         ['toggleCrearTareas',  'cuerpoCrearTareas'],
     ];
 

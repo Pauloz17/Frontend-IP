@@ -116,7 +116,7 @@ export async function eliminarUsuario(id) {
 
 // ── CAMBIAR ROL DE USUARIO ────────────────────────────────────────────────────
 // PATCH /api/users/:id/role
-// Este endpoint fue creado por Sebastián en el Issue B-3.
+// Este endpoint fue creado por Ana Isabella en el Issue B-3.
 // Solo funciona si el token del usuario autenticado tiene role = 'admin'.
 //
 // Parámetros:

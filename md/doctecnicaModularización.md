@@ -1,7 +1,7 @@
 # Documentación Técnica
 ## Sistema de Gestión de Tareas
 
-**Autores:** Karol Nicolle Torres Fuentes, Juan Sebastian Patiño Hernandez  
+**Autores:** Paulo Zapata y Ana Isabella
 **Institución:** SENA – Técnico en Programación de Software  
 **Fecha:** 21-02-2026
 

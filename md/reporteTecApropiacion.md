@@ -3,7 +3,7 @@
 
 **Proyecto:** Sistema de Gestión de Tareas — TRANSFERENCIA_DOM
 
-**Autores:** Karol Nicolle Torres Fuentes | Juan Sebastián Patiño Hernández
+**Autores:** Paulo Zapata y Ana Isabella
 
 **SENA — Técnico en Programación de Software | Febrero 2026**
 

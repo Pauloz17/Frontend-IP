@@ -1,7 +1,7 @@
 # Parte 1 – Análisis del Proyecto Actual - Antes de la Guía de Modularización
 ## Sistema de Gestión de Tareas
 
-**Autores:** Karol Nicolle Torres Fuentes, Juan Sebastian Patiño Hernandez  
+**Autores:** Paulo Zapata y Ana Isabella
 **Fecha:** 21-02-2026  
 **Institución:** SENA
 **Instructor:** John Freddy Becerra Castellanos

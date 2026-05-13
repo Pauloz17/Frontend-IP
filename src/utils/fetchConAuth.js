@@ -84,7 +84,7 @@ export async function fetchConAuth(url, opciones = {}) {
         // Llamar al endpoint de Paulo en el backend: POST /api/auth/refresh
         const { accessToken: nuevoToken } = await renovarToken(refreshToken);
 
-        // Guardar el nuevo accessToken en localStorage (función de Karol en sesion.js)
+        // Guardar el nuevo accessToken en localStorage (función de Paulo en sesion.js)
         actualizarAccessToken(nuevoToken);
 
         // Resolver las peticiones que estaban esperando en la cola

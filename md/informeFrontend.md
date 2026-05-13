@@ -1,6 +1,6 @@
 # Informe Técnico de Cambios — Frontend
 **Proyecto:** transferencia_dom_parejas  
-**Autores:** Karol Nicolle Torres Fuentes | Juan Sebastián Patiño Hernández  
+**Autores:** Paulo Zapata y Ana Isabella
 **Institución:** SENA — Técnico en Programación de Software  
 **Fecha:** Marzo 2026  
 **Versión:** 2.0
