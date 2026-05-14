@@ -27,7 +27,7 @@ function renderAdmin() {
 function renderUsuario() {
     if (!haySesionActiva()) { navigate('/login'); return; }
     const usuario = obtenerUsuarioSesion();
-    if (usuario?.role !== 'usuario') { navigate('/login'); return; }
+    if (usuario?.role !== 'user') { navigate('/login'); return; }
     activarModoUsuario();
     mostrarEstadoVacio();
 }
@@ -45,7 +45,7 @@ function renderRaiz() {
     const usuario = obtenerUsuarioSesion();
     if      (usuario?.role === 'admin')       activarModoAdmin();
     else if (usuario?.role === 'instructor')  activarModoInstructor();
-    else if (usuario)                         { activarModoUsuario(); mostrarEstadoVacio(); }
+    else if (usuario?.role === 'user')        { activarModoUsuario(); mostrarEstadoVacio(); }
     else                                       activarModoInicio();
 }
 
