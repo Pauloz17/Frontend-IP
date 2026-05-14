@@ -1,36 +1,75 @@
-// MÓDULO: router.js
-// Enrutador SPA (Single Page Application)
-// Maneja la navegación entre rutas y renderización de vistas
+// src/router/router.js
+// Enrutador SPA adaptado a la arquitectura de show/hide existente.
+// No inyecta HTML dinámico — llama a las funciones activarModo* de modoUI.js.
 
-const routes = {
-  '/': () => import('../views/home.js'),
-  '/login': () => import('../views/login.js'),
-  '/admin': () => import('../views/admin.js'),
-  '/usuario': () => import('../views/usuario.js'),
+import { haySesionActiva, obtenerUsuarioSesion } from '../utils/sesion.js';
+import {
+    activarModoInicio,
+    activarModoAdmin,
+    activarModoUsuario,
+    activarModoInstructor,
+} from '../ui/modoUI.js';
+import { mostrarEstadoVacio } from '../ui/tareasUI.js';
+
+// ── Handlers por ruta ────────────────────────────────────────────────────────
+
+function renderLogin() {
+    activarModoInicio();
+}
+
+function renderAdmin() {
+    if (!haySesionActiva()) { navigate('/login'); return; }
+    const usuario = obtenerUsuarioSesion();
+    if (usuario?.role !== 'admin') { navigate('/login'); return; }
+    activarModoAdmin();
+}
+
+function renderUsuario() {
+    if (!haySesionActiva()) { navigate('/login'); return; }
+    const usuario = obtenerUsuarioSesion();
+    if (usuario?.role !== 'usuario') { navigate('/login'); return; }
+    activarModoUsuario();
+    mostrarEstadoVacio();
+}
+
+function renderInstructor() {
+    if (!haySesionActiva()) { navigate('/login'); return; }
+    const usuario = obtenerUsuarioSesion();
+    if (usuario?.role !== 'instructor') { navigate('/login'); return; }
+    activarModoInstructor();
+}
+
+// Ruta raíz: redirige según el rol guardado en sesión
+function renderRaiz() {
+    if (!haySesionActiva()) { activarModoInicio(); return; }
+    const usuario = obtenerUsuarioSesion();
+    if      (usuario?.role === 'admin')       activarModoAdmin();
+    else if (usuario?.role === 'instructor')  activarModoInstructor();
+    else if (usuario)                         { activarModoUsuario(); mostrarEstadoVacio(); }
+    else                                       activarModoInicio();
+}
+
+// ── Tabla de rutas ───────────────────────────────────────────────────────────
+
+const rutas = {
+    '/':           renderRaiz,
+    '/login':      renderLogin,
+    '/admin':      renderAdmin,
+    '/usuario':    renderUsuario,
+    '/instructor': renderInstructor,
 };
 
-/**
- * Navega a una ruta especificada y renderiza la vista correspondiente
- * @param {string} path - La ruta a navegar (ej: '/admin', '/login')
- */
+// ── API pública ──────────────────────────────────────────────────────────────
+
 export function navigate(path) {
-  window.history.pushState({}, '', path);
-  renderRoute(path);
+    window.history.pushState({}, '', path);
+    renderRoute(path);
 }
 
-/**
- * Renderiza la vista correspondiente a la ruta actual
- * @param {string} path - La ruta a renderizar
- */
 export function renderRoute(path) {
-  const routeLoader = routes[path] || routes['/'];
-  routeLoader()
-    .then(module => module.default())
-    .catch(err => console.error('Error al cargar la ruta:', err));
+    const handler = rutas[path] ?? rutas['/'];
+    handler();
 }
 
-// Escuchar el evento popstate para el botón atrás del navegador
+// Botones atrás / adelante del navegador
 window.addEventListener('popstate', () => renderRoute(window.location.pathname));
-
-// Renderizar la ruta actual al cargar la página
-renderRoute(window.location.pathname);
