@@ -1,13 +1,12 @@
 /* VARIABLES GLOBALES */
 :root {
-    --color-primario:        #c762e3;
-    --color-primario-oscuro: #be5cc3;
-    --color-primario-suave:  #faf5ff;
+    --color-primario:        #00d4ff;
+    --color-primario-oscuro: #0099cc;
+    --color-primario-suave:  #e0f7ff;
 
-    --color-admin:        #0284c7;
-    --color-admin-oscuro: #0369a1;
+    --color-admin:        #0047ab;
+    --color-admin-oscuro: #003380;
 
-    /* Variables de color para el rol instructor — paleta verde pastel */
     --color-instructor:        #059669;
     --color-instructor-oscuro: #047857;
     --color-instructor-suave:  #d1fae5;
@@ -18,12 +17,12 @@
     --color-aprobacion: #f97316;
     --color-error:      #ef4444;
 
-    --texto-oscuro: #111827;
-    --texto-medio:  #4b5563;
-    --texto-claro:  #9ca3af;
+    --texto-oscuro: #0a0e2e;
+    --texto-medio:  #1e2a5e;
+    --texto-claro:  #6b7db3;
 
-    --fondo-gris:  #f9fafb;
-    --borde-suave: #e5e7eb;
+    --fondo-gris:  #f0f4ff;
+    --borde-suave: #c5d3f0;
 
     --fuente: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 
@@ -48,9 +47,9 @@
     --radio-2xl:  1.5rem;
     --radio-full: 9999px;
 
-    --sombra-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --sombra-md: 0 4px 10px rgba(0, 0, 0, 0.10);
-    --sombra-lg: 0 8px 20px rgba(0, 0, 0, 0.10);
+    --sombra-sm: 0 1px 3px rgba(0, 100, 255, 0.10);
+    --sombra-md: 0 4px 10px rgba(0, 100, 255, 0.15);
+    --sombra-lg: 0 8px 20px rgba(0, 100, 255, 0.15);
 
     --transicion: 200ms ease;
 }
@@ -77,10 +76,11 @@ body {
 
 /* FONDOS POR MODO */
 /* En modo inicio no hay padding ni fondo de color, la imagen lo cubre todo   */
-body[data-modo="inicio"]  { background: linear-gradient(135deg, #c794f9 0%, #b9f9e6 100%); padding: 0; }body[data-modo="admin"]   { background-color: #e0f2fe; padding: var(--espacio-lg); }
-body[data-modo="usuario"] { background-color: #f3e8ff; }
-body[data-modo="admin"]   { background-color: #e0f2fe; }
-
+body[data-modo="inicio"] {
+    background: linear-gradient(135deg, #0a0e2e 0%, #0d2157 40%, #0a4a8a 70%, #00d4ff 100%);
+    padding: 0;
+    overflow: hidden;
+}
 
 /* HIDDEN */
 .hidden { display: none !important; }
@@ -102,13 +102,16 @@ body[data-modo="admin"]   { background-color: #e0f2fe; }
 .inicio__titulo {
     font-size: var(--texto-3xl);
     font-weight: 700;
-    color: var(--texto-oscuro);
+    color: #00d4ff;
     margin-bottom: var(--espacio-sm);
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.4);
+    text-align: center;
 }
 
 .inicio__subtitulo {
     font-size: var(--texto-md);
-    color: var(--texto-medio);
+    color: rgba(0, 212, 255, 0.7);
+    text-align: center;
 }
 
 .inicio__accesos {
@@ -1190,12 +1193,7 @@ body[data-modo="admin"]   { background-color: #e0f2fe; }
 /* background-size: cover escala la imagen para cubrir todo el área           */
 /* background-position: center centra la imagen en el contenedor              */
 .inicio__columna-imagen {
-    flex: 1;
-    min-height: 100vh;
-    background-image: url('/bg-inicio.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    display: none;
 }
 
 /* Columna derecha: degradado suave con colores del proyecto                  */
@@ -1216,13 +1214,13 @@ body[data-modo="admin"]   { background-color: #e0f2fe; }
 .inicio__glass-card {
     width: 100%;
     max-width: 480px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(10, 30, 80, 0.55);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 2rem;
-    border: 1.5px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 40px rgba(123, 45, 139, 0.12),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border: 1.5px solid rgba(0, 212, 255, 0.4);
+    box-shadow: 0 8px 40px rgba(0, 180, 255, 0.25),
+                inset 0 1px 0 rgba(0, 212, 255, 0.3);
     padding: var(--espacio-xl);
     display: flex;
     flex-direction: column;
@@ -1232,6 +1230,7 @@ body[data-modo="admin"]   { background-color: #e0f2fe; }
 /* Se redefine el header dentro de la card glass para que sea centrado        */
 .inicio__glass-card .inicio__header {
     text-align: center;
+    width: 100%;
 }
 
 /* Nota al pie dentro de la card glass                                        */
@@ -1678,23 +1677,29 @@ body[data-modo="admin"]   { background-color: #e0f2fe; }
 
 /* Texto y botón de enlace de "Regístrate aquí" debajo del login */
 .login-registro-texto {
-    text-align:  center;
-    font-size:   var(--texto-sm);
-    color:       var(--texto-medio);
-    margin-top:  var(--espacio-sm);
+    text-align: center;
+    font-size: var(--texto-sm);
+    color: rgba(0, 212, 255, 0.8);
+    margin-top: var(--espacio-sm);
 }
 
 /* El botón de registro parece un enlace pero es un button para semántica correcta */
 .login-registro-btn {
-    background:  none;
-    border:      none;
-    color:       var(--color-primario);
-    cursor:      pointer;
-    font-size:   var(--texto-sm);
-    font-weight: 600;
-    padding:     0;
-    text-decoration: underline;
-    transition:  color var(--transicion);
+    background: none;
+    border: none;
+    color: #00d4ff;
+    cursor: pointer;
+    font-size: var(--texto-sm);
+    font-weight: 700;
+    padding: 0;
+    text-decoration: none;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.9);
+    transition: color var(--transicion);
+}
+
+.login-registro-btn:hover {
+    color: white;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 1);
 }
 
 .login-registro-btn:hover {
@@ -1895,3 +1900,23 @@ body[data-modo="instructor"] { background-color: var(--color-instructor-suave); 
 }
 .btn-link:hover { color: var(--color-primario-oscuro); }
 
+
+.bolitas-fondo {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bolita {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.5;
+}
+
+.bolita-1 { width: 300px; height: 300px; background: #00d4ff; top: -80px; left: -80px; }
+.bolita-2 { width: 250px; height: 250px; background: #0066ff; bottom: 10%; right: -60px; }
+.bolita-3 { width: 200px; height: 200px; background: #00aaff; top: 40%; left: 15%; }
+.bolita-4 { width: 180px; height: 180px; background: #00ffee; bottom: -60px; left: 30%; }
