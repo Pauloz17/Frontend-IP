@@ -1,7 +1,8 @@
 // MÓDULO: utils/notificaciones.js
 // CAPA:   Utils
 
-import Swal from 'sweetalert2';
+// SweetAlert2 se carga desde CDN en index.html, no con import ES module
+// <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 const Toast = Swal.mixin({
     toast: true,
