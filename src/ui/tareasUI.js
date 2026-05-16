@@ -9,7 +9,7 @@
 //   SI puede leer y escribir en el DOM
 //   SI puede importar de utils/
 //   NO puede importar de api/ ni de services/
-
+import { hasPermission } from '../../checkPermissions.js';
 import { limpiarError } from '../utils/validaciones.js';
 
 // ── REFERENCIAS AL DOM ────────────────────────────────────────────────────────
@@ -129,6 +129,15 @@ export function crearFilaTarea(tarea, indice) {
 
     contenedor.appendChild(btnEditar);
     contenedor.appendChild(btnExportar);
+    const btnEliminar = document.getElementById('btn-eliminar-global');
+if (btnEliminar) {
+    btnEliminar.style.display = hasPermission('tasks.delete.all') ? 'block' : 'none';
+}
+
+const btnCrear = document.getElementById('btn-crear-tarea');
+if (btnCrear) {
+    btnCrear.style.display = hasPermission('tasks.create') ? 'block' : 'none';
+}
     celdaAcciones.appendChild(contenedor);
 
     fila.appendChild(celdaNum);

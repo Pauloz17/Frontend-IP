@@ -1209,7 +1209,7 @@ body[data-modo="inicio"] {
 }
 
 
-/* Card glass: muy transparente sobre el degradado del body                   */
+/* Card glass: muy transparente sobre el degradado del bsody                   */
 /* Con el fondo colorido detrás el blur y la transparencia se ven reales   background: rgba(255, 255, 255, 0.25);   */
 .inicio__glass-card {
     width: 100%;
@@ -1573,27 +1573,31 @@ body[data-modo="inicio"] {
 .login-form {
     display: flex;
     flex-direction: column;
-    /* Reducido de 1rem a 0.5rem — los campos quedan más juntos y menos dispersos */
-    /* Antes el espacio se veía raro y desproporcionado entre los campos */
-    gap: 0.1rem;
+    gap: 0.75rem;
 }
 
 /* Botón principal — gradiente morado-azul de la paleta del proyecto */
 .btn-acceso--login {
-    background-color: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario), #35c6ff);
     color: #fff;
     border: none;
-    border-radius: 12px;
-    padding: 0.85rem 1.5rem;
+    border-radius: 14px;
+    padding: 0.95rem 1.75rem;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
+    transition: transform var(--transicion), box-shadow var(--transicion), opacity var(--transicion);
     width: 100%;
     margin-top: 0.5rem;
+    box-shadow: 0 16px 24px rgba(0, 212, 255, 0.18);
 }
 
-.btn-acceso--login:hover  { opacity: 0.92; transform: translateY(-1px); }
+.btn-acceso--login:hover {
+    opacity: 0.98;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 34px rgba(0, 212, 255, 0.25);
+}
+
 .btn-acceso--login:active { transform: translateY(0); }
 .btn-acceso--login:disabled { opacity: 0.6; cursor: not-allowed; }
 
