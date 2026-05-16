@@ -1,50 +1,61 @@
 /* VARIABLES GLOBALES */
 :root {
-    --color-primario:        #00d4ff;
-    --color-primario-oscuro: #0099cc;
-    --color-primario-suave:  #e0f7ff;
+    /* Paleta principal unificada (versión release - azul oscuro) */
+    --color-primary: #2E3A8C;
+    --color-secondary: #553C9A;
+    --color-accent: #F6AD55;
+    --color-bg: #F7FAFC;
+    --color-text: #1A202C;
+    --color-border: #E2E8F0;
+    --color-success: #276749;
+    --color-danger: #742A2A;
 
-    --color-admin:        #0047ab;
+    /* Alias para compatibilidad con tu código antiguo (cyan) */
+    --color-primario: #2E3A8C;
+    --color-primario-oscuro: #1e2a6e;
+    --color-primario-suave: #e8eaf6;
+
+    --color-admin: #0047ab;
     --color-admin-oscuro: #003380;
 
-    --color-instructor:        #059669;
+    --color-instructor: #059669;
     --color-instructor-oscuro: #047857;
-    --color-instructor-suave:  #d1fae5;
+    --color-instructor-suave: #d1fae5;
 
-    --color-pendiente:  #fbbf24;
-    --color-progreso:   #60a5fa;
+    --color-pendiente: #fbbf24;
+    --color-progreso: #60a5fa;
     --color-completada: #34d399;
     --color-aprobacion: #f97316;
-    --color-error:      #ef4444;
+    --color-error: #ef4444;
 
     --texto-oscuro: #0a0e2e;
-    --texto-medio:  #1e2a5e;
-    --texto-claro:  #6b7db3;
+    --texto-medio: #1e2a5e;
+    --texto-claro: #6b7db3;
 
-    --fondo-gris:  #f0f4ff;
+    --fondo-gris: #f0f4ff;
     --borde-suave: #c5d3f0;
 
     --fuente: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 
-    --texto-sm:  0.875rem;
-    --texto-md:  1rem;
-    --texto-lg:  1.125rem;
-    --texto-xl:  1.25rem;
+    --texto-sm: 0.875rem;
+    --texto-md: 1rem;
+    --texto-lg: 1.125rem;
+    --texto-xl: 1.25rem;
     --texto-2xl: 1.5rem;
     --texto-3xl: 1.875rem;
 
-    --espacio-xs:  0.25rem;
-    --espacio-sm:  0.5rem;
-    --espacio-md:  1rem;
-    --espacio-lg:  1.5rem;
-    --espacio-xl:  2rem;
+    --espacio-xs: 0.25rem;
+    --espacio-sm: 0.5rem;
+    --espacio-md: 1rem;
+    --espacio-lg: 1.5rem;
+    --espacio-xl: 2rem;
     --espacio-2xl: 3rem;
 
-    --radio-sm:   0.375rem;
-    --radio-md:   0.5rem;
-    --radio-lg:   0.75rem;
-    --radio-xl:   1rem;
-    --radio-2xl:  1.5rem;
+    --radio-sm: 0.375rem;
+    --radio-md: 0.5rem;
+    --radio-lg: 0.75rem;
+    --radio-xl: 1rem;
+    --radio-2xl: 1.5rem;
     --radio-full: 9999px;
 
     --sombra-sm: 0 1px 3px rgba(0, 100, 255, 0.10);
@@ -53,6 +64,7 @@
 
     --transicion: 200ms ease;
 }
+
 
 /* RESET */
 *, *::before, *::after {

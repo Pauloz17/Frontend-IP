@@ -2,6 +2,7 @@
 // Punto de entrada. Inicializa la aplicación.
 
 // ── IMPORTS ──────────────────────────────────────────────────────────────────
+import { renderRoute } from './router/router.js';
 import { registrarEventListeners }          from './services/tareasService.js';
 import { mostrarEstadoVacio }               from './ui/tareasUI.js';
 import { activarModoInicio, activarModoAdmin, activarModoUsuario, activarModoInstructor } from './ui/modoUI.js';
@@ -9,6 +10,9 @@ import { API_BASE_URL }                     from './utils/config.js';
 import { haySesionActiva, obtenerUsuarioSesion } from './utils/sesion.js';
 import { forgotPassword, verifyResetCode, resetPassword } from './api/authApi.js';
 // Swal se carga desde CDN en index.html
+
+// Inicializar el enrutador SPA con la ruta actual
+renderRoute(window.location.pathname);
 
 // ── DOMContentLoaded ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
