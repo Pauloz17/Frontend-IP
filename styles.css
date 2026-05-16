@@ -1,8 +1,10 @@
 /* VARIABLES GLOBALES */
 :root {
-    --color-primario:        #c762e3;
-    --color-primario-oscuro: #be5cc3;
-    --color-primario-suave:  #faf5ff;
+    --color-primary: #2E3A8C;   
+--color-secondary: #553C9A;  
+--color-accent: #F6AD55;     
+--color-bg: #F7FAFC;         
+--color-text: #1A202C;       
 
     --color-admin:        #0284c7;
     --color-admin-oscuro: #0369a1;
@@ -53,7 +55,18 @@
     --sombra-lg: 0 8px 20px rgba(0, 0, 0, 0.10);
 
     --transicion: 200ms ease;
+    --transicion: 200ms ease;
+
+    --color-primary: #2E3A8C;
+    --color-secondary: #553C9A;
+    --color-accent: #F6AD55;
+    --color-bg: #F7FAFC;
+    --color-text: #1A202C;
+    --color-border: #E2E8F0;
+    --color-success: #276749;
+    --color-danger: #742A2A;
 }
+
 
 /* RESET */
 *, *::before, *::after {
