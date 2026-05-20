@@ -1,4 +1,4 @@
-# Asignacion de trabajo - Sebastian
+# Asignacion de trabajo - Ana Isabella
 
 Guia: Modelos y separacion de responsabilidades
 Rol: Desarrollador backend y API frontend
@@ -19,8 +19,8 @@ Tambien creas una carpeta nueva: src/models con dos archivos dentro.
 
 En el frontend creas un archivo nuevo: src/api/usuariosApi.js con las
 funciones fetch para los endpoints de usuarios.
-Karol trabaja en src/ui y en index.html y styles.css.
-Paulo trabaja en src/routes.
+Paulo trabaja en src/ui y en index.html y styles.css.
+Ana Isabella trabaja en src/routes.
 Nunca se pisan archivos entre los tres.
 
 ---
@@ -63,7 +63,7 @@ ejecuta esto en GitBash antes de empezar:
 
 Si aun no tienes configurado upstream ejecuta primero:
 
-    git remote add upstream URL_DEL_REPO_DE_KAROL_BACKEND
+    git remote add upstream URL_DEL_REPO_DE_PAULO_BACKEND
 
 Para el frontend:
 
@@ -75,7 +75,7 @@ Para el frontend:
 
 Si aun no tienes configurado upstream para el frontend ejecuta primero:
 
-    git remote add upstream URL_DEL_REPO_DE_KAROL_FRONTEND
+    git remote add upstream URL_DEL_REPO_DE_PAULO_FRONTEND
 
 ---
 
@@ -87,7 +87,7 @@ Archivo a crear: src/models/userModel.js
 La carpeta src/models no existe todavia. Creala en VS Code antes de crear el archivo.
 
 Este archivo contiene un arreglo de usuarios con tres usuarios de prueba
-(Paulo, Sebastian, Karol) con id 1, 2, 3. Cada usuario tiene los campos:
+(Paulo, Ana Isabella, Paulo) con id 1, 2, 3. Cada usuario tiene los campos:
 id, documento, name y email.
 
 También contiene un contador que empieza en 4 para que el proximo usuario
@@ -344,7 +344,7 @@ Commit para copiar y pegar:
 ## Pull Request del backend
 
 Cuando los cuatro archivos del backend esten subidos, crea el PR desde tu fork
-hacia release en el repo de Karol.
+hacia release en el repo de Paulo.
 
     Titulo: feat: modelos y controladores de usuarios y tareas
 
@@ -371,14 +371,14 @@ hacia release en el repo de Karol.
 
     Nota:
     Paulo crea las rutas que importan estos controladores.
-    Karol actualiza app.js para conectar todo.
+    Paulo actualiza app.js para conectar todo.
 
 ---
 
 ## Pull Request del frontend
 
 Cuando el archivo del frontend este subido, crea el PR desde tu fork
-hacia release en el repo de Karol del frontend.
+hacia release en el repo de Paulo del frontend.
 
     Titulo: feat: agregar funciones fetch de usuarios
 
@@ -388,7 +388,7 @@ hacia release en el repo de Karol del frontend.
     de usuarios: obtener todos, obtener por id, crear, actualizar y eliminar.
 
     Por que:
-    Karol necesita importar estas funciones en adminPanel.js para que el panel de
+    Paulo necesita importar estas funciones en adminPanel.js para que el panel de
     administracion pueda mostrar, crear y eliminar usuarios desde el frontend.
 
     Archivos nuevos:

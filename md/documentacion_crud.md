@@ -1,6 +1,6 @@
 # Documentación Técnica — Sistema de Gestión de Tareas
 
-**Autores:** Karol Nicolle Torres Fuentes, Juan Sebastian Patiño Hernandez  
+**Autores:** Paulo Zapata y Ana Isabella
 **Fecha:** 19-02-2026 | **Institución:** SENA
 
 ---
@@ -71,7 +71,7 @@ npx json-server server.json
 **server.json:**
 ```json
 {
-  "users": [{ "id": 1097497124, "name": "Karol Torres", "email": "karol@email.com" }],
+  "users": [{ "id": 1097497124, "name": "Paulo Zapata", "email": "paulo@email.com" }],
   "tasks": []
 }
 ```

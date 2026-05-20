@@ -1,4 +1,4 @@
-# Asignacion de trabajo - Karol
+# Asignacion de trabajo - Paulo
 
 Guia: Modelos y separacion de responsabilidades
 Rol: Lider del proyecto
@@ -19,7 +19,7 @@ que creo Paulo (userRoutes.js y taskRoutes.js) en lugar de los que ya existian
 (users.routes.js y tasks.routes.js).
 
 En el frontend creas dos vistas nuevas y modificas HTML, CSS y una linea en tareasApi.js.
-Sebastian trabaja en src/api/usuariosApi.js y en el backend (modelos y controladores).
+Ana Isabella trabaja en src/api/usuariosApi.js y en el backend (modelos y controladores).
 Paulo trabaja en src/routes del backend.
 Nunca se pisan archivos entre los tres.
 
@@ -30,9 +30,9 @@ Nunca se pisan archivos entre los tres.
 Actualmente en server.json (servidor_uso_personal) el id de cada usuario
 es su numero de documento:
 
-    { "id": 1097497124, "name": "Karol Torres", "email": "karoln.oficiall@gmail.com" }
+    { "id": 1097497124, "name": "Paulo Zapata", "email": "pauloz17@example.com" }
 
-El backend nuevo trabaja diferente. En los modelos que crea Sebastian los usuarios
+El backend nuevo trabaja diferente. En los modelos que crea Ana Isabella los usuarios
 tienen estos campos:
 
     id:        1, 2, 3  (numero consecutivo segun el orden de creacion)
@@ -80,7 +80,7 @@ Frontend:
 Repositorio: servidor_backend_parejas
 Archivo a modificar: src/app.js
 
-Espera a que Sebastian y Paulo confirmen que sus PRs fueron mergeados en release.
+Espera a que Ana Isabella y Paulo confirmen que sus PRs fueron mergeados en release.
 Luego jala los cambios antes de editar:
 
     cd /c/sena/servidor_backend_parejas
@@ -182,7 +182,7 @@ Pull Request del backend:
     - src/app.js
 
     Nota:
-    Este PR debe mergearse despues de los PRs de Sebastian y Paulo.
+    Este PR debe mergearse despues de los PRs de Ana Isabella y Paulo.
 
 ---
 
@@ -240,7 +240,7 @@ Seccion de tareas:
 Muestra una tabla con todas las tareas registradas.
 Cada fila tiene: titulo, estado y los nombres de los usuarios asignados.
 
-Esta vista llama a las funciones de src/api/usuariosApi.js (que crea Sebastian)
+Esta vista llama a las funciones de src/api/usuariosApi.js (que crea Ana Isabella)
 para obtener usuarios, crear uno nuevo y eliminar uno.
 Para las tareas llama a las funciones ya existentes en src/api/tareasApi.js.
 

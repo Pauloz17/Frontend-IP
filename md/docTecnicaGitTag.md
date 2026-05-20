@@ -1,7 +1,7 @@
 # Justificación Técnica — Git Tag v2.1.0
 
 **Proyecto:** Sistema de Gestión de Tareas — TRANSFERENCIA_DOM  
-**Autores:** Karol Nicolle Torres Fuentes | Juan Sebastián Patiño Hernández  
+**Autores:** Paulo Zapata y Ana Isabella
 **SENA — Febrero 2026**
 
 ---

@@ -15,7 +15,7 @@ import { API_BASE_URL, API_PREFIX } from '../utils/config.js';
 // Cuerpo esperado: { email, password }  ← CAMBIO: antes era { documento, password }
 // Respuesta exitosa: { accessToken, refreshToken, user: { id, name, role, documento } }
 //
-// El backend (auth.service.js de Sebastian) ahora busca el usuario por email.
+// El backend (auth.service.js de Ana Isabella) ahora busca el usuario por email.
 // El token JWT sigue incluyendo { id, documento, role } en el payload,
 // así que el resto del frontend no necesita cambios.
 export async function loginUsuario({ email, password }) {
@@ -33,7 +33,7 @@ export async function loginUsuario({ email, password }) {
 
 // ── REGISTRO DE USUARIO ───────────────────────────────────────────────────────
 // POST /api/auth/register
-// Este endpoint fue creado por Sebastián en el Issue B-1.
+// Este endpoint fue creado por Ana Isabella en el Issue B-1.
 // Cuerpo: { name, documento, email, password }
 // Respuesta exitosa 201: { success, message, data: { usuario sin password } }
 // Error 409: email o documento ya registrado

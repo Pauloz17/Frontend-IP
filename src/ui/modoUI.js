@@ -46,6 +46,64 @@ import { loginUsuario, registrarUsuario, forgotPassword, verifyResetCode, resetP
 
 import { guardarSesion, cerrarSesion, obtenerUsuarioSesion } from '../utils/sesion.js';
 
+// ── NUEVA FUNCIÓN: GESTIÓN DE IP Y BIENVENIDA POR ROL ────────────────────────
+/**
+ * Obtiene la IP del servidor y personaliza el mensaje de bienvenida según el rol.
+ */
+async function inicializarInformacionSistema(usuario, modo) {
+    // 1. Identificar elementos según la vista activa
+    const sufijo = modo === 'admin' ? '-admin' : (modo === 'instructor' ? '-instr' : '');
+    const welcomeEl = document.getElementById(modo === 'usuario' ? 'welcome-msg' : `welcome-msg${sufijo}`);
+    const ipEl = document.getElementById(modo === 'usuario' ? 'ip-display' : `ip-display${sufijo}`);
+
+    if (!usuario || !welcomeEl) return;
+
+    // 2. Definir texto de bienvenida según el ROL
+    const nombresRoles = {
+        'admin': 'Administrador',
+        'instructor': 'Instructor',
+        'user': 'Usuario'
+    };
+    
+    const rolTexto = nombresRoles[usuario.role] || 'Usuario';
+    welcomeEl.textContent = `Bienvenido, ${rolTexto}`;
+
+    // 3. Estilo especial si el correo es el tuyo
+    if (usuario.email === 'tu-correo@ejemplo.com') {
+        welcomeEl.style.color = '#ffcc00'; // Dorado/Amarillo
+        welcomeEl.style.fontWeight = 'bold';
+        welcomeEl.style.textShadow = '0 0 8px rgba(255, 204, 0, 0.4)';
+    }
+
+    // 4. Obtener la IP del servidor (backend con ipconfig)
+    try {
+        // Obtenemos el token desde localStorage (clave usuarioActual)
+        const session = JSON.parse(localStorage.getItem('usuarioActual'));
+        const token = session?.accessToken || session?.token;
+
+        const response = await fetch('http://localhost:3000/api/system/network-ip', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            // Mostramos la IP devuelta por el servidor
+            if (ipEl) ipEl.textContent = data.ip || 'Localhost';
+            
+            // Tip: Si quieres que el usuario sepa que puede entrar desde otro PC:
+            console.log(`Acceso red local: http://${data.ip}:3000`);
+        } else {
+            if (ipEl) ipEl.textContent = 'Error de conexión';
+        }
+    } catch (error) {
+        console.error('Error al obtener la IP del sistema:', error);
+        if (ipEl) ipEl.textContent = 'Servidor Offline';
+    }
+}
+
 // ── REFERENCIAS A VISTAS ──────────────────────────────────────────────────────
 
 const pantallaInicio = document.getElementById('pantallaInicio');
@@ -156,7 +214,10 @@ export async function activarModoUsuario() {
     // Cargar el dashboard de estadísticas del panel usuario.
     // Se llama con los IDs del vistaUsuario (prefijo userDash) para no
     // sobreescribir los valores del dashboard del panel admin.
-    cargarDashboardUsuario();   // ← AGREGAR ESTA LÍNEA
+    cargarDashboardUsuario();
+
+    // Ejecutar inicialización de sistema
+    await inicializarInformacionSistema(usuarioSesion, 'usuario');
 }
 
 export async function activarModoAdmin() {
@@ -170,6 +231,10 @@ export async function activarModoAdmin() {
     // Se inicializa el dropdown de usuarios de la card "Crear Tarea"
     // await garantiza que los checkboxes están cargados antes de continuar
     await inicializarDropdownUsuarios();
+
+    // Ejecutar inicialización de sistema
+    const usuarioSesion = obtenerUsuarioSesion();
+    await inicializarInformacionSistema(usuarioSesion, 'admin');
 }
 
 // ── ACTIVAR MODO INSTRUCTOR ───────────────────────────────────────────────────
@@ -187,6 +252,10 @@ export async function activarModoInstructor() {
     cargarTareasInstructor();
     // Inicializar el dropdown de usuarios para la card "Crear Tarea" del instructor
     await inicializarDropdownInstructor();
+
+    // Ejecutar inicialización de sistema
+    const usuarioSesion = obtenerUsuarioSesion();
+    await inicializarInformacionSistema(usuarioSesion, 'instructor');
 }
 
 // cargarDashboardInstructor — actualiza las tarjetas de estadísticas del panel instructor.
@@ -716,7 +785,7 @@ async function abrirModalEditarUsuario(usuario) {
     inputNombre.type        = 'text';
     inputNombre.id          = 'editar-usuario-nombre';
     inputNombre.className   = 'form__input';
-    inputNombre.placeholder = 'Ej: Karol Torres';
+    inputNombre.placeholder = 'Ej: Paulo Zapata';
     // Se pre-rellena con el valor actual del usuario
     inputNombre.value       = usuario.name || '';
     grupoNombre.appendChild(labelNombre);
@@ -1285,7 +1354,7 @@ function registrarCardsContraibles() {
     const pares = [
         ['toggleUsuarios',     'cuerpoUsuarios'],
         ['toggleTareas',       'cuerpoTareas'],
-        // La card de crear tareas se agrega aquí cuando Sebastián la cree
+        // La card de crear tareas se agrega aquí cuando Ana Isabella la cree
         ['toggleCrearTareas',  'cuerpoCrearTareas'],
     ];
 

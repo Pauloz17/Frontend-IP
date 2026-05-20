@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestion de Tareas - SENA</title>
+    <!-- Favicon del proyecto: icono de lista de tareas con paleta morada del sistema -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script type="module" crossorigin src="/assets/index-C76oAt7Q.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Bm0YphS_.css">
+</head>
+<body data-modo="inicio">
+
+<!-- PANTALLA DE INICIO -->
+<div class="pantalla-inicio" id="pantallaInicio">
+    <div class="inicio__columna-imagen"></div>
+
+    <div class="inicio__columna-panel">
+        <div class="inicio__glass-card">
+            <header class="inicio__header">
+                <h1 class="inicio__titulo">Sistema de Gestion de Tareas</h1>
+                <p class="inicio__subtitulo">Ejercicio DOM · Transferencia del Conocimiento · SENA</p>
+            </header>
+
+            <!-- LOGIN FORM — reemplaza los dos acceso-card originales -->
+            <!-- El formulario envía las credenciales al backend y recibe el JWT -->
+            <div class="login-form-wrapper">
+
+                <!-- Mensaje de bienvenida — aparece tras un login exitoso -->
+                <div class="login-bienvenida hidden" id="loginBienvenida">
+                    <span class="login-bienvenida__icono">👋</span>
+                    <p class="login-bienvenida__texto" id="loginBienvenidaTexto">¡Bienvenido!</p>
+                </div>
+
+                <form class="login-form" id="loginForm" novalidate>
+
+
+                    <!-- Campo de correo electrónico — reemplaza al campo de documento -->
+                    <!-- El login ahora usa email + contraseña en lugar de documento + contraseña -->
+                    <!-- El id cambia a loginEmail para que los listeners en modoUI.js funcionen -->
+                    <div class="form__group">
+                        <label for="loginEmail" class="form__label">Correo electrónico</label>
+                        <input
+                            type="text"
+                            id="loginEmail"
+                            class="form__input"
+                            placeholder="ejemplo@correo.com"
+                            autocomplete="email"
+                        >
+                        <span class="form__error" id="loginEmailError"></span>
+                    </div>
+
+                    <!-- Campo: contraseña con botón para mostrar/ocultar -->
+                    <div class="form__group">
+                        <label for="loginPassword" class="form__label">Contraseña</label>
+                        <div class="input-password-wrapper">
+                            <input
+                                type="password"
+                                id="loginPassword"
+                                class="form__input"
+                                placeholder="Tu contraseña"
+                                autocomplete="current-password"
+                            >
+                            <button
+                                type="button"
+                                class="btn-toggle-password"
+                                id="btnTogglePassword"
+                                aria-label="Mostrar u ocultar contraseña"
+                            >👁️</button>
+                        </div>
+                        <span class="form__error" id="loginPasswordError"></span>
+                    </div>
+
+                    <!-- Botón principal de ingreso -->
+                    <button type="submit" class="btn-acceso btn-acceso--login" id="btnLogin">
+                        Ingresar al Sistema
+                    </button>
+                </form>
+
+                <!-- Enlace de registro debajo del formulario de login -->
+                <!-- Al hacer clic abre el modal de registro sin recargar la página -->
+                <p class="login-registro-texto">
+                    ¿No tienes cuenta? 
+                    <button type="button" class="login-registro-btn" id="btnAbrirRegistro">
+                        Regístrate aquí
+                    </button>
+                </p>
+
+                <!-- Enlace de recuperación de contraseña — aparece bajo los botones de login -->
+                <!-- Al hacer clic abre el modal olvidoPasswordModal con el flujo de 3 pasos -->
+                <p class="link-acceso">
+                    <button type="button" class="btn-link" id="btnOlvidoPassword">¿Olvidó su contraseña?</button>
+                </p>
+            </div>
+
+            <p class="inicio__nota">*Solo personal autorizado.*</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- VISTA USUARIO -->
+<div class="vista hidden" id="vistaUsuario">
+
+    <header class="header header--usuario">
+        <div class="header__nav">
+            <!-- Botón circular de cierre de sesión en el panel de usuario -->
+            <!-- El ícono de flecha de salida comunica visualmente la acción de salir -->
+            <button class="btn-logout-circular btn-logout-circular--usuario" id="btnLogoutUsuario">
+                <span class="btn-logout-circular__icono">⏻</span>
+            </button>
+
+            <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--usuario" id="btnPerfilUsuario">
+                <span class="btn-logout-circular__icono"><img width="30" height="30" src="https://img.icons8.com/sf-ultralight/50/show-password.png" alt="show-password"/></span>
+            </button>
+        </div>
+        
+        <h1 class="header__title">Mi Portal de Tareas</h1>
+        <p class="header__subtitle">Gestiona tus tareas asignadas</p>
+        <!-- Barra de búsqueda de tareas en el panel de usuario -->
+        <!-- Filtra en tiempo real las tareas ya cargadas en pantalla -->
+        <!-- El evento input se registra en tareasService.js -->
+        <form class="header__busqueda-usuario" id="userSearchTaskForm" novalidate>
+                <input
+                    type="text"
+                    id="userSearchTaskInput"
+                    placeholder="Buscar tarea por id, título o estado..."
+                    autocomplete="off"
+                >
+
+                <button type="submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+                    </svg>
+                </button>
+            </form>
+    </header>
+
+    <main class="contenido-vista contenido-vista--usuario">
+
+        <!-- Dashboard de estadísticas del panel usuario -->
+        <!-- Mismas 5 tarjetas que el panel admin pero con IDs únicos prefijados con "userDash" -->
+        <!-- Los IDs distintos evitan conflicto con los IDs del dashboard del panel admin -->
+        <section class="dashboard-stats">
+            <div class="stat-card">
+                <span class="stat-card__label">Total tareas</span>
+                <span class="stat-card__valor" id="userDashTotal">—</span>
+            </div>
+            <div class="stat-card stat-card--pendiente">
+                <span class="stat-card__label">Pendientes</span>
+                <span class="stat-card__valor" id="userDashPendiente">—</span>
+            </div>
+            <div class="stat-card stat-card--progreso">
+                <span class="stat-card__label">En Progreso</span>
+                <span class="stat-card__valor" id="userDashProgreso">—</span>
+            </div>
+            <div class="stat-card stat-card--aprobacion">
+                <span class="stat-card__label">Por aprobar</span>
+                <span class="stat-card__valor" id="userDashAprobacion">—</span>
+            </div>
+            <div class="stat-card stat-card--completada">
+                <span class="stat-card__label">Completadas</span>
+                <span class="stat-card__valor" id="userDashCompletada">—</span>
+            </div>
+        </section>
+
+        <!-- Datos del usuario encontrado -->
+        <section class="hidden" id="userDataSection">
+            <div class="card card--usuario-info">
+                <h2 class="card__title">Datos del usuario</h2>
+                <div class="user-info">
+                    <div class="user-info__item">
+                        <span class="user-info__label">ID</span>
+                        <span class="user-info__value" id="userId"></span>
+                    </div>
+                    <div class="user-info__item">
+                        <span class="user-info__label">Nombre</span>
+                        <span class="user-info__value" id="userName"></span>
+                    </div>
+                    <div class="user-info__item">
+                        <span class="user-info__label">Correo</span>
+                        <span class="user-info__value" id="userEmail"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabla de tareas del usuario -->
+        <section class="tasks-section hidden" id="tasksSection">
+            <div class="tasks-header">
+                <h2 class="tasks-header__title">Mis tareas asignadas</h2>
+                <span class="tasks-header__count" id="tasksCount">0 tareas</span>
+            </div>
+            <div class="tasks-table-container">
+                <table class="tasks-table">
+                    <thead class="tasks-table__head">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Titulo</th>
+                            <th scope="col">Descripcion</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Comentario</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksTableBody"></tbody>
+                </table>
+            </div>
+            <div class="tasks-empty" id="tasksEmptyState">
+                <p class="tasks-empty__text">No tienes tareas asignadas</p>
+                <p class="tasks-empty__subtext">El administrador te asignara tareas desde su panel</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer footer--usuario">
+        <p class="footer__text">
+            Ejercicio de Manipulacion del DOM - Transferencia del Conocimiento |
+            SENA - Tecnico en Programacion de Software
+        </p>
+    </footer>
+</div>
+
+
+<!-- VISTA ADMIN -->
+<div class="vista hidden" id="vistaAdmin">
+
+    <header class="header header--admin">
+        <div class="header__nav">
+            <!-- La clase btn-logout-circular--admin aplica el color azul del admin -->
+            <button class="btn-logout-circular btn-logout-circular--admin" id="btnLogoutAdmin" type="button" aria-label="Cerrar sesión">
+                <span class="btn-logout-circular__icono">⏻</span>
+            </button>
+            <!-- Agrega debajo del botón de logout del admin -->
+            <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--admin" id="btnPerfilAdmin" type="button" aria-label="Cambiar contraseña">
+                <span class="btn-logout-circular__icono">👤</span>
+            </button>
+        </div>
+        <h1 class="header__title">Panel de Administracion</h1>
+        <p class="header__subtitle">Gestion completa de usuarios y tareas del sistema</p>
+
+        <form id="adminSearchUserForm" novalidate class="header__busqueda-admin">
+            <input
+                type="text"
+                id="adminUserDocument"
+                placeholder="Buscar usuario por nombre, doc o ID..."
+                autocomplete="off"
+            >
+            <button type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+                </svg>
+            </button>
+        </form>
+    </header>
+
+    <main class="contenido-vista contenido-vista--admin">
+
+        <!-- Dashboard de estadísticas -->
+        <section class="dashboard-stats">
+            <div class="stat-card">
+                <span class="stat-card__label">Total tareas</span>
+                <span class="stat-card__valor" id="dashboardTotal">—</span>
+            </div>
+            <div class="stat-card stat-card--pendiente">
+                <span class="stat-card__label">Pendientes</span>
+                <span class="stat-card__valor" id="dashboardPendiente">—</span>
+            </div>
+            <div class="stat-card stat-card--progreso">
+                <span class="stat-card__label">En Progreso</span>
+                <span class="stat-card__valor" id="dashboardProgreso">—</span>
+            </div>
+            <!-- Stat-card de tareas en estado "pendiente_aprobacion" -->
+            <!-- El usuario marcó la tarea como lista para revisión del admin -->
+            <div class="stat-card stat-card--aprobacion">
+                <span class="stat-card__label">Por aprobar</span>
+                <span class="stat-card__valor" id="dashboardAprobacion">—</span>
+            </div>
+            <div class="stat-card stat-card--completada">
+                <span class="stat-card__label">Completadas</span>
+                <span class="stat-card__valor" id="dashboardCompletada">—</span>
+            </div>
+        </section>
+
+        <!-- Card de crear tareas — contraíble (la lógica la registra registrarCardsContraibles en modoUI.js) -->
+        <section class="admin-card admin-card--full" id="cardCrearTareas">
+            <!-- Encabezado contraíble: título + flecha de toggle -->
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="toggleCrearTareas">
+                <h2 class="admin-card__titulo">Crear Tarea</h2>
+                <!-- Flecha que rota al contraer o desplegar -->
+                <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Crear Tarea">▼</button>
+            </div>
+            <!-- Cuerpo contraíble: formulario de creación de tarea -->
+            <div class="admin-card__cuerpo" id="cuerpoCrearTareas">
+                <form id="createTaskForm" class="form" novalidate>
+
+                    <!-- Campo título: obligatorio según el schema del backend -->
+                    <div class="form__group">
+                        <label for="newTaskTitle" class="form__label">Título</label>
+                        <input
+                            type="text"
+                            id="newTaskTitle"
+                            class="form__input"
+                            placeholder="Ej: Revisar documentación del proyecto"
+                            autocomplete="off"
+                        >
+                        <span class="form__error" id="newTaskTitleError"></span>
+                    </div>
+
+                    <!-- Campo descripción: opcional -->
+                    <div class="form__group">
+                        <label for="newTaskDescription" class="form__label">
+                            Descripción <span class="form__label--opcional">(opcional)</span>
+                        </label>
+                        <textarea
+                            id="newTaskDescription"
+                            class="form__input form__textarea"
+                            rows="2"
+                            placeholder="Descripción detallada de la tarea..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Campo estado: pendiente o en_progreso (el admin no crea tareas ya completadas) -->
+                    <div class="form__group">
+                        <label for="newTaskStatus" class="form__label">Estado</label>
+                        <select id="newTaskStatus" class="form__input">
+                            <option value="" disabled selected>Selecciona un estado</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_progreso">En Progreso</option>
+                        </select>
+                        <span class="form__error" id="newTaskStatusError"></span>
+                    </div>
+
+                    <!-- Campo comentario: opcional -->
+                    <div class="form__group">
+                        <label for="newTaskComment" class="form__label">
+                            Comentario <span class="form__label--opcional">(opcional)</span>
+                        </label>
+                        <textarea
+                            id="newTaskComment"
+                            class="form__input form__textarea"
+                            rows="2"
+                            placeholder="Agrega un comentario inicial..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Campo asignación de usuarios: obligatorio -->
+                    <div class="form__group">
+                        <label class="form__label">
+                            Asignar usuarios
+                        </label>
+                        <!-- Contenedor relativo para posicionar el panel flotante -->
+                        <div class="usuarios-dropdown" id="usuariosDropdown">
+                            <!-- Botón que abre y cierra el panel de checkboxes -->
+                            <button
+                                type="button"
+                                class="usuarios-dropdown__btn"
+                                id="usuariosDropdownBtn"
+                                aria-expanded="false"
+                                aria-haspopup="listbox"
+                            >
+                                <!-- El texto cambia según los usuarios seleccionados -->
+                                <span id="usuariosDropdownTexto">Seleccionar usuarios...</span>
+                                <span class="usuarios-dropdown__icono">▼</span>
+                            </button>
+                            <!-- Panel con la lista de checkboxes — empieza oculto -->
+                            <div class="usuarios-dropdown__panel hidden" id="usuariosDropdownPanel" role="listbox">
+                                <!-- Los checkboxes se generan dinámicamente con JS desde modoUI.js -->
+                            </div>
+                        </div>
+                        <span class="form__error" id="newTaskUsersError"></span>
+                    </div>
+
+                    <!-- Botón de submit del formulario -->
+                    <button type="submit" class="btn btn--admin-primary">
+                        <span class="btn__text">Crear Tarea</span>
+                    </button>
+
+                </form>
+            </div>
+        </section>
+
+        <!-- Card de tabla de usuarios — también contraíble -->
+        <section class="admin-card admin-card--full" id="cardUsuarios">
+            <!-- Encabezado contraíble con contador morado -->
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="toggleUsuarios">
+                <h2 class="admin-card__titulo">Usuarios del Sistema</h2>
+                <div class="admin-card__cabecera-derecha">
+                    <span id="adminUsersCount" class="tasks-header__count">0 usuarios</span>
+                    <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Usuarios del Sistema">▼</button>
+                </div>
+            </div>
+            <!-- Cuerpo contraíble: tabla de usuarios -->
+            <div class="admin-card__cuerpo" id="cuerpoUsuarios">
+                <div class="tasks-table-container">
+                    <table class="tasks-table tasks-table--admin">
+                        <thead class="tasks-table__head">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Documento</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Correo</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card de tabla de tareas — también contraíble -->
+        <section class="admin-card admin-card--full" id="cardTareas">
+            <!-- Encabezado contraíble con contador morado -->
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="toggleTareas">
+                <h2 class="admin-card__titulo">Todas las Tareas del Sistema</h2>
+                <div class="admin-card__cabecera-derecha">
+                    <span id="adminTasksCount" class="tasks-header__count">0 tareas</span>
+                    <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Tareas del Sistema">▼</button>
+                </div>
+            </div>
+            <!-- Cuerpo contraíble: filtros y tabla de tareas -->
+            <div class="admin-card__cuerpo" id="cuerpoTareas">
+                <div class="tasks-controls">
+                    <div class="tasks-controls__grupo">
+                        <label for="adminFiltroEstado" class="tasks-controls__label">Estado</label>
+                        <!-- Select de filtro por estado en la tabla del admin -->
+                        <!-- Incluye el cuarto estado para que el admin pueda filtrar tareas por aprobar -->
+                        <select id="adminFiltroEstado" class="tasks-controls__select">
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_progreso">En Progreso</option>
+                            <!-- Cuarto estado: tareas que el usuario marcó como listas para revisión -->
+                            <option value="pendiente_aprobacion">Pendiente por aprobar</option>
+                            <option value="completada">Completada</option>
+                        </select>
+                    </div>
+                    <div class="tasks-controls__grupo">
+                        <label for="adminFiltroUsuario" class="tasks-controls__label">Usuario</label>
+                        <input type="text" id="adminFiltroUsuario" class="tasks-controls__input" placeholder="Nombre del usuario">
+                    </div>
+                    <div class="tasks-controls__grupo">
+                        <label for="adminOrdenSelect" class="tasks-controls__label">Ordenar</label>
+                        <select id="adminOrdenSelect" class="tasks-controls__select">
+                            <option value="">Sin orden</option>
+                            <option value="titulo_asc">Titulo A-Z</option>
+                            <option value="titulo_desc">Titulo Z-A</option>
+                            <option value="estado">Por estado</option>
+                            <option value="usuario">Por usuario</option>
+                        </select>
+                    </div>
+                    <div class="tasks-controls__grupo tasks-controls__grupo--btn">
+                        <button class="btn btn--admin-primary" id="adminBtnAplicarFiltros">Aplicar</button>
+                    </div>
+                    <div class="tasks-controls__grupo tasks-controls__grupo--btn">
+                        <button class="btn btn--admin-secondary" id="adminBtnLimpiarFiltros">Limpiar</button>
+                    </div>
+                    <div class="tasks-controls__grupo tasks-controls__grupo--btn">
+                        <button class="btn btn--admin-primary" id="adminBtnExportar">Exportar JSON</button>
+                    </div>
+                </div>
+                <div class="tasks-table-container">
+                    <table class="tasks-table tasks-table--admin">
+                        <thead class="tasks-table__head">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Titulo</th>
+                                <th scope="col">Descripcion</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Usuario asignado</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTasksTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer footer--admin">
+        <p class="footer__text">
+            Panel de Administracion · Sistema de Gestion de Tareas |
+            SENA - Tecnico en Programacion de Software
+        </p>
+    </footer>
+</div>
+
+
+<!-- VISTA INSTRUCTOR — panel para usuarios con rol 'instructor' -->
+<!-- Estructura idéntica a vistaAdmin pero con paleta verde pastel y sin gestión de usuarios -->
+<div class="vista hidden" id="vistaInstructor">
+
+    <header class="header header--instructor">
+        <div class="header__nav">
+            <!-- Botón de cerrar sesión circular — color verde del instructor -->
+            <button class="btn-logout-circular btn-logout-circular--instructor" id="btnLogoutInstructor" type="button" aria-label="Cerrar sesión">
+                <span class="btn-logout-circular__icono">⏻</span>
+            </button>
+
+            <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--instructor" id="btnPerfilInstructor" type="button" aria-label="Cambiar contraseña">
+                <span class="btn-logout-circular__icono">👤</span>
+            </button>
+        </div>
+        <h1 class="header__title">Panel Docente</h1>
+        <p class="header__subtitle">Gestión de tareas y seguimiento de estudiantes</p>
+
+        <form id="instrSearchUserForm" novalidate class="header__busqueda-instructor">
+            <input
+                type="text"
+                id="instrUserDocument"
+                placeholder="Buscar usuario por nombre, doc o ID..."
+                autocomplete="off"
+            >
+            <button type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.398a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+                </svg>
+            </button>
+        </form>
+    </header>
+
+    <main class="contenido-vista contenido-vista--instructor">
+
+        <!-- Dashboard de estadísticas del instructor — mismas 5 tarjetas que admin -->
+        <!-- IDs con prefijo "instr" para no colisionar con los del panel admin -->
+        <section class="dashboard-stats">
+            <div class="stat-card">
+                <span class="stat-card__label">Total tareas</span>
+                <span class="stat-card__valor" id="instrDashTotal">—</span>
+            </div>
+            <div class="stat-card stat-card--pendiente">
+                <span class="stat-card__label">Pendientes</span>
+                <span class="stat-card__valor" id="instrDashPendiente">—</span>
+            </div>
+            <div class="stat-card stat-card--progreso">
+                <span class="stat-card__label">En Progreso</span>
+                <span class="stat-card__valor" id="instrDashProgreso">—</span>
+            </div>
+            <div class="stat-card stat-card--aprobacion">
+                <span class="stat-card__label">Por aprobar</span>
+                <span class="stat-card__valor" id="instrDashAprobacion">—</span>
+            </div>
+            <div class="stat-card stat-card--completada">
+                <span class="stat-card__label">Completadas</span>
+                <span class="stat-card__valor" id="instrDashCompletada">—</span>
+            </div>
+        </section>
+
+        <!-- Card de crear tareas — idéntica a la del admin, con IDs prefijados instr -->
+        <section class="admin-card admin-card--full" id="instrCardCrearTareas">
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="instrToggleCrearTareas">
+                <h2 class="admin-card__titulo">Crear Tarea</h2>
+                <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Crear Tarea">▼</button>
+            </div>
+            <div class="admin-card__cuerpo" id="instrCuerpoCrearTareas">
+                <form id="instrCreateTaskForm" class="form" novalidate>
+                    <div class="form__group">
+                        <label for="instrNewTaskTitle" class="form__label">Título</label>
+                        <input type="text" id="instrNewTaskTitle" class="form__input" placeholder="Ej: Revisar documentación del proyecto" autocomplete="off">
+                        <span class="form__error" id="instrNewTaskTitleError"></span>
+                    </div>
+                    <div class="form__group">
+                        <label for="instrNewTaskDescription" class="form__label">
+                            Descripción <span class="form__label--opcional">(opcional)</span>
+                        </label>
+                        <textarea id="instrNewTaskDescription" class="form__input form__textarea" rows="2" placeholder="Descripción detallada de la tarea..."></textarea>
+                    </div>
+                    <div class="form__group">
+                        <label for="instrNewTaskStatus" class="form__label">Estado</label>
+                        <select id="instrNewTaskStatus" class="form__input">
+                            <option value="" disabled selected>Selecciona un estado</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_progreso">En Progreso</option>
+                        </select>
+                        <span class="form__error" id="instrNewTaskStatusError"></span>
+                    </div>
+                    <div class="form__group">
+                        <label for="instrNewTaskComment" class="form__label">
+                            Comentario <span class="form__label--opcional">(opcional)</span>
+                        </label>
+                        <textarea id="instrNewTaskComment" class="form__input form__textarea" rows="2" placeholder="Agrega un comentario inicial..."></textarea>
+                    </div>
+                    <div class="form__group">
+                        <label class="form__label">Asignar usuarios</label>
+                        <div class="usuarios-dropdown" id="instrUsuariosDropdown">
+                            <button type="button" class="usuarios-dropdown__btn" id="instrUsuariosDropdownBtn" aria-expanded="false" aria-haspopup="listbox">
+                                <span id="instrUsuariosDropdownTexto">Seleccionar usuarios...</span>
+                                <span class="usuarios-dropdown__icono">▼</span>
+                            </button>
+                            <div class="usuarios-dropdown__panel hidden" id="instrUsuariosDropdownPanel" role="listbox"></div>
+                        </div>
+                        <span class="form__error" id="instrNewTaskUsersError"></span>
+                    </div>
+                    <button type="submit" class="btn btn--instr-primary">
+                        <span class="btn__text">Crear Tarea</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Card de tabla de usuarios — SOLO con botón "ver/asignar", sin editar ni eliminar -->
+        <section class="admin-card admin-card--full" id="instrCardUsuarios">
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="instrToggleUsuarios">
+                <h2 class="admin-card__titulo">Estudiantes del Sistema</h2>
+                <div class="admin-card__cabecera-derecha">
+                    <span id="instrUsersCount" class="tasks-header__count">0 usuarios</span>
+                    <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Usuarios">▼</button>
+                </div>
+            </div>
+            <div class="admin-card__cuerpo" id="instrCuerpoUsuarios">
+                <div class="tasks-table-container">
+                    <table class="tasks-table tasks-table--admin">
+                        <thead class="tasks-table__head">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Documento</th>
+                                <th scope="col">Nombre</th>
+                                <th scope="col">Correo</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <!-- El tbody lo llena cargarTablaUsuariosInstructor() en modoUI.js -->
+                        <tbody id="instrUsersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card de tabla de tareas — idéntica a la del admin con filtros -->
+        <section class="admin-card admin-card--full" id="instrCardTareas">
+            <div class="admin-card__cabecera admin-card__cabecera--toggle" id="instrToggleTareas">
+                <h2 class="admin-card__titulo">Todas las Tareas del Sistema</h2>
+                <div class="admin-card__cabecera-derecha">
+                    <span id="instrTasksCount" class="tasks-header__count">0 tareas</span>
+                    <button class="btn-toggle-card" type="button" aria-label="Contraer o desplegar Tareas">▼</button>
+                </div>
+            </div>
+            <div class="admin-card__cuerpo" id="instrCuerpoTareas">
+                <div class="tasks-controls">
+                    <div class="tasks-controls__grupo">
+                        <label for="instrFiltroEstado" class="tasks-controls__label">Estado</label>
+                        <select id="instrFiltroEstado" class="tasks-controls__select">
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_progreso">En Progreso</option>
+                            <option value="pendiente_aprobacion">Pendiente por aprobar</option>
+                            <option value="completada">Completada</option>
+                        </select>
+                    </div>
+                    <div class="tasks-controls__grupo tasks-controls__grupo--btn">
+                        <button class="btn btn--instr-primary" id="instrBtnAplicarFiltros">Aplicar</button>
+                    </div>
+                    <div class="tasks-controls__grupo tasks-controls__grupo--btn">
+                        <button class="btn btn--admin-secondary" id="instrBtnLimpiarFiltros">Limpiar</button>
+                    </div>
+                </div>
+                <div class="tasks-table-container">
+                    <table class="tasks-table tasks-table--admin">
+                        <thead class="tasks-table__head">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Titulo</th>
+                                <th scope="col">Descripcion</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Usuario asignado</th>
+                                <th scope="col">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instrTasksTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer footer--instructor">
+        <p class="footer__text">
+            Panel Docente · Sistema de Gestión de Tareas |
+            SENA - Técnico en Programación de Software
+        </p>
+    </footer>
+</div>
+
+
+<!-- MODAL EDICIÓN DE TAREA -->
+<div class="modal-overlay hidden" id="editModal">
+    <div class="modal">
+        <div class="modal__header">
+            <h2 class="modal__title">Editar Tarea</h2>
+            <button class="modal__close" id="editCloseBtn" type="button">✕</button>
+        </div>
+        <form id="editTaskForm" class="form" novalidate>
+            <input type="hidden" id="editTaskId">
+            <div class="form__group">
+                <label for="editTaskTitle" class="form__label">Titulo</label>
+                <input type="text" id="editTaskTitle" class="form__input" placeholder="Nuevo titulo">
+            </div>
+            <div class="form__group">
+                <label for="editTaskDescription" class="form__label">Descripcion</label>
+                <textarea id="editTaskDescription" class="form__input form__textarea" rows="3" placeholder="Nueva descripcion..."></textarea>
+            </div>
+            <div class="form__group">
+                <label for="editTaskStatus" class="form__label">Estado</label>
+                <!-- Select de estado del modal de edición de tarea -->
+                <!-- Las opciones se filtran dinámicamente según el modo (usuario o admin) -->
+                <!-- En modo usuario solo aparecen "Pendiente por aprobar" y "En Progreso" -->
+                <!-- En modo admin aparecen las tres opciones incluyendo "Completada" -->
+                <!-- Select de estado del modal de edición de tarea -->
+                <!-- Las opciones se filtran dinámicamente en mostrarModalEdicion() de tareasUI.js -->
+                <!-- MODO USUARIO: solo "En Progreso" y "Pendiente por aprobar" -->
+                <!-- MODO ADMIN:   los cuatro estados completos -->
+                <select id="editTaskStatus" class="form__input">
+                    <option value="" disabled>Selecciona un estado</option>
+
+                    <!-- SOLO ADMIN: la tarea fue creada y aún no se inicia -->
+                    <option value="pendiente" class="opcion-admin">Pendiente</option>
+
+                    <!-- AMBOS MODOS: el usuario está trabajando en ella -->
+                    <option value="en_progreso">En Progreso</option>
+
+                    <!-- SOLO USUARIO: terminó y espera revisión del admin -->
+                    <!-- value diferente a "pendiente" — son estados distintos en la BD -->
+                    <option value="pendiente_aprobacion" class="opcion-usuario">Pendiente por aprobar</option>
+
+                    <!-- SOLO ADMIN: revisó el trabajo y lo aprueba -->
+                    <option value="completada" class="opcion-admin">Completada</option>
+                </select>
+            </div>
+            <div class="form__group">
+                <label for="editTaskComment" class="form__label">
+                    Comentario <span class="form__label--opcional">(opcional)</span>
+                </label>
+                <textarea id="editTaskComment" class="form__input form__textarea" rows="2" placeholder="Agrega o edita el comentario..."></textarea>
+            </div>
+            <div class="modal__actions">
+                <button type="button" class="btn btn--secondary" id="editCancelBtn">
+                    <span class="btn__text">Cancelar</span>
+                </button>
+                <button type="submit" class="btn btn--primary">
+                    <span class="btn__text">Guardar Cambios</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL DE REGISTRO -->
+<!-- Se muestra como overlay encima de la pantalla de inicio al hacer clic en "Regístrate" -->
+<!-- Tiene el mismo estilo glass que la card del login para coherencia visual -->
+<div class="modal-overlay hidden" id="registroModal">
+    <div class="modal modal--registro">
+
+        <!-- Encabezado del modal con título y botón de cierre -->
+        <div class="modal__header">
+            <h2 class="modal__title">Crear cuenta</h2>
+            <button class="modal__close" id="registroCloseBtn" type="button">✕</button>
+        </div>
+
+        <!-- Formulario de registro con validaciones en cada campo -->
+        <form id="registroForm" class="form" novalidate>
+
+            <!-- Campo nombre: solo letras y espacios, mínimo 3 caracteres -->
+            <div class="form__group">
+                <label for="registroNombre" class="form__label">Nombre completo</label>
+                <input
+                    type="text"
+                    id="registroNombre"
+                    class="form__input"
+                    placeholder="Ej: María López"
+                    autocomplete="name"
+                >
+                <span class="form__error" id="registroNombreError"></span>
+            </div>
+
+            <!-- Campo documento: solo números, mínimo 5 dígitos -->
+            <div class="form__group">
+                <label for="registroDocumento" class="form__label">Número de documento</label>
+                <input
+                    type="text"
+                    id="registroDocumento"
+                    class="form__input"
+                    placeholder="Ej: 1097497124"
+                    autocomplete="off"
+                >
+                <span class="form__error" id="registroDocumentoError"></span>
+            </div>
+
+            <!-- Campo email: debe tener @ y dominio válido -->
+            <div class="form__group">
+                <label for="registroEmail" class="form__label">Correo electrónico</label>
+                <input
+                    type="text"
+                    id="registroEmail"
+                    class="form__input"
+                    placeholder="ejemplo@correo.com"
+                    autocomplete="email"
+                >
+                <span class="form__error" id="registroEmailError"></span>
+            </div>
+
+            <!-- Campo contraseña: mínimo 6 caracteres -->
+            <div class="form__group">
+                <label for="registroPassword" class="form__label">Contraseña</label>
+                <input
+                    type="password"
+                    id="registroPassword"
+                    class="form__input"
+                    placeholder="Mínimo 6 caracteres"
+                    autocomplete="new-password"
+                >
+                <span class="form__error" id="registroPasswordError"></span>
+            </div>
+
+            <!-- Campo confirmar contraseña: debe coincidir con el campo anterior -->
+            <div class="form__group">
+                <label for="registroConfirmar" class="form__label">Confirmar contraseña</label>
+                <input
+                    type="password"
+                    id="registroConfirmar"
+                    class="form__input"
+                    placeholder="Repite tu contraseña"
+                    autocomplete="new-password"
+                >
+                <span class="form__error" id="registroConfirmarError"></span>
+            </div>
+
+            <!-- Botón de envío del formulario de registro -->
+            <button type="submit" class="btn-acceso btn-acceso--login" id="btnRegistrar">
+                Crear cuenta
+            </button>
+
+        </form>
+    </div>
+</div>
+
+<!-- MODAL CAMBIO DE CONTRASEÑA -->
+<!-- Se abre desde el botón de perfil circular en los 3 paneles -->
+<div class="modal-overlay hidden" id="cambioPasswordModal">
+    <div class="modal">
+        <div class="modal__header">
+            <h2 class="modal__title">Cambiar Contraseña</h2>
+            <button class="modal__close" id="cambioPasswordClose" type="button">✕</button>
+        </div>
+        <div class="modal__body">
+            <form id="cambioPasswordForm" class="form" novalidate>
+                <div class="form__group">
+                    <label for="passwordActual" class="form__label">Contraseña actual</label>
+                    <input type="password" id="passwordActual" class="form__input" placeholder="Ingresa tu contraseña actual" autocomplete="current-password">
+                    <span class="form__error" id="passwordActualError"></span>
+                </div>
+                <div class="form__group">
+                    <label for="passwordNueva" class="form__label">Nueva contraseña</label>
+                    <input type="password" id="passwordNueva" class="form__input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                    <span class="form__error" id="passwordNuevaError"></span>
+                </div>
+                <div class="form__group">
+                    <label for="passwordConfirmar" class="form__label">Confirmar nueva contraseña</label>
+                    <input type="password" id="passwordConfirmar" class="form__input" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+                    <span class="form__error" id="passwordConfirmarError"></span>
+                </div>
+                <div class="modal__actions">
+                    <button type="button" class="btn btn--cancelar" id="cambioPasswordCancelar">Cancelar</button>
+                    <button type="submit" class="btn btn--admin-primary">Cambiar Contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL OLVIDÓ CONTRASEÑA — 3 pasos secuenciales -->
+<div class="modal-overlay hidden" id="olvidoPasswordModal">
+    <div class="modal">
+        <div class="modal__header">
+            <h2 class="modal__title" id="olvidoPasswordTitulo">Recuperar contraseña</h2>
+            <button class="modal__close" id="olvidoPasswordClose" type="button">✕</button>
+        </div>
+        <div class="modal__body">
+
+            <!-- PASO 1: ingresar el email -->
+            <div id="olvidoPaso1">
+                <p class="form__ayuda">Ingresa tu correo electrónico y te enviaremos un código de verificación.</p>
+                <form id="olvidoEmailForm" class="form" novalidate>
+                    <div class="form__group">
+                        <label for="olvidoEmail" class="form__label">Correo electrónico</label>
+                        <input type="email" id="olvidoEmail" class="form__input" placeholder="tu@correo.com" autocomplete="email">
+                        <span class="form__error" id="olvidoEmailError"></span>
+                    </div>
+                    <div class="modal__actions">
+                        <button type="button" class="btn btn--cancelar" id="olvidoPaso1Cancelar">Cancelar</button>
+                        <button type="submit" class="btn btn--admin-primary">Enviar código</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PASO 2: ingresar el código (oculto hasta que se complete el paso 1) -->
+            <div id="olvidoPaso2" class="hidden">
+                <p class="form__ayuda">Ingresa el código de 6 dígitos que recibiste en tu correo.</p>
+                <form id="olvidoCodigoForm" class="form" novalidate>
+                    <div class="form__group">
+                        <label for="olvidoCodigo" class="form__label">Código de verificación</label>
+                        <input type="text" id="olvidoCodigo" class="form__input" placeholder="123456" maxlength="6" autocomplete="one-time-code">
+                        <span class="form__error" id="olvidoCodigoError"></span>
+                    </div>
+                    <div class="modal__actions">
+                        <button type="button" class="btn btn--cancelar" id="olvidoPaso2Volver">Volver</button>
+                        <button type="submit" class="btn btn--admin-primary">Verificar código</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- PASO 3: ingresar nueva contraseña (oculto hasta que se complete el paso 2) -->
+            <div id="olvidoPaso3" class="hidden">
+                <p class="form__ayuda">Ingresa y confirma tu nueva contraseña.</p>
+                <form id="olvidoNuevaPasswordForm" class="form" novalidate>
+                    <div class="form__group">
+                        <label for="olvidoNuevaPassword" class="form__label">Nueva contraseña</label>
+                        <input type="password" id="olvidoNuevaPassword" class="form__input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                        <span class="form__error" id="olvidoNuevaPasswordError"></span>
+                    </div>
+                    <div class="form__group">
+                        <label for="olvidoConfirmarPassword" class="form__label">Confirmar contraseña</label>
+                        <input type="password" id="olvidoConfirmarPassword" class="form__input" placeholder="Repite la nueva contraseña" autocomplete="new-password">
+                        <span class="form__error" id="olvidoConfirmarPasswordError"></span>
+                    </div>
+                    <div class="modal__actions">
+                        <button type="button" class="btn btn--cancelar" id="olvidoPaso3Cancelar">Cancelar</button>
+                        <button type="submit" class="btn btn--admin-primary">Cambiar contraseña</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

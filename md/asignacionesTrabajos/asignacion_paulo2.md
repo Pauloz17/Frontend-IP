@@ -22,8 +22,8 @@ En los viejos la logica esta dentro del archivo de rutas.
 En los nuevos las rutas solo importan funciones del controlador y las llaman.
 Las rutas no hacen nada por su cuenta, solo dirigen la peticion.
 
-Sebastian trabaja en src/models y src/controller al mismo tiempo.
-Karol trabaja en app.js y en el frontend.
+Ana Isabella trabaja en src/models y src/controller al mismo tiempo.
+Paulo trabaja en app.js y en el frontend.
 Nunca se pisan archivos entre los tres.
 
 ---
@@ -32,7 +32,7 @@ Nunca se pisan archivos entre los tres.
 
 La carpeta se llama src/controller en singular, no src/controllers.
 Los archivos dentro se llaman users.controller.js y tasks.controller.js.
-Sebastian los reescribe con nuevas funciones exportadas.
+Ana Isabella los reescribe con nuevas funciones exportadas.
 Tus archivos de rutas importan esas funciones.
 
 ---
@@ -40,13 +40,13 @@ Tus archivos de rutas importan esas funciones.
 ## Sobre los prefijos de ruta
 
 Los archivos de rutas no llevan el prefijo /api/users ni /api/tasks.
-Esos prefijos los define Karol en app.js con app.use().
+Esos prefijos los define Paulo en app.js con app.use().
 En tus archivos solo escribes la parte final de cada ruta.
 Por ejemplo, dentro de userRoutes.js la ruta de obtener todos es:
 
     router.get('/', getUsers)
 
-Y Karol en app.js hace:
+Y Paulo en app.js hace:
 
     app.use('/api/users', usersRouter)
 
@@ -77,9 +77,9 @@ ejecuta esto en GitBash antes de empezar:
     git pull upstream release
     git push origin desarrollador
 
-Si aun no tienes configurado upstream (el repo original de Karol) ejecuta primero:
+Si aun no tienes configurado upstream (el repo original de Paulo) ejecuta primero:
 
-    git remote add upstream URL_DEL_REPO_DE_KAROL
+    git remote add upstream URL_DEL_REPO_DEL_PAULO
 
 Luego si el pull upstream release.
 
@@ -215,7 +215,7 @@ El archivo debe tener las siguientes secciones:
 
     Nombre del proyecto: Sistema de Gestion de Tareas - Backend
     Descripcion: breve explicacion de para que sirve el backend
-    Equipo: Paulo Pacheco, Sebastian Patino, Karol Torres
+    Equipo: Paulo Pacheco, Ana Isabella Patino, Paulo Torres
     Como ejecutar: npm run dev (el servidor queda en http://localhost:3000)
     Estructura de carpetas: lista de src/models, src/controller, src/routes, src/app.js
     Tabla de endpoints completa con columnas: Metodo, Ruta, Descripcion
@@ -256,7 +256,7 @@ Commit para copiar y pegar:
 ## Pull Request
 
 Cuando los tres archivos esten subidos, crea el PR desde tu fork hacia release
-en el repo de Karol.
+en el repo de Paulo.
 
     Titulo: feat: rutas nuevas por capas y documentacion del proyecto
 
@@ -284,6 +284,6 @@ en el repo de Karol.
     - src/routes/tasks.routes.js (el anterior, queda como referencia)
 
     Nota:
-    Este PR debe mergearse antes de que Karol actualice app.js porque ella
+    Este PR debe mergearse antes de que Paulo actualice app.js porque él
     importa los nuevos archivos de rutas. Las rutas importan los controladores
-    que reescribio Sebastian, por eso el PR de Sebastian debe mergearse primero.
+    que reescribio Ana Isabella, por eso el PR de Ana Isabella debe mergearse primero.

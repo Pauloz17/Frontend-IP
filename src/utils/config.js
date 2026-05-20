@@ -1,8 +1,6 @@
-// MÓDULO: utils/config.js
-// CAPA:   Utils
+// Detecta automáticamente si se accede por localhost o por la IP de la red
+const host = window.location.hostname;
 
-// Centraliza las constantes de conexión al backend.
-// Si el puerto o prefijo cambia, solo se edita aquí.
-
-export const API_BASE_URL = 'http://localhost:3000';
-export const API_PREFIX   = '/api';
+export const API_BASE_URL = `http://${host}:3000`;
+export const API_PREFIX = '/api';
+ 
