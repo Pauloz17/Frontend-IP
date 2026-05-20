@@ -11,7 +11,7 @@
 // Ninguna línea de este archivo usa innerHTML ni atributos style en JS.
 
 // Se importan las funciones de la capa API para operaciones CRUD de usuarios
-import { obtenerTodosLosUsuarios, crearUsuario, eliminarUsuario } from '../api/usuariosApi.js';
+import { obtenerTodosLosUsuarios, crearUsuario, eliminarUsuario, actualizarUsuario } from '../api/usuariosApi.js';
 
 // Se importa la URL base para construir las peticiones de tareas
 import { obtenerTodasLasTareas } from '../api/tareasApi.js';
@@ -260,14 +260,25 @@ async function renderizarTablaUsuarios(contenedor) {
         const divAcciones   = document.createElement('div');
         divAcciones.className = 'task-actions';
 
-        // Botón eliminar — data-id y data-nombre permiten leerlos desde el listener delegado
+        // Botón Soft Delete (Desactivar)
+        const btnDesactivar = document.createElement('button');
+        btnDesactivar.type        = 'button';
+        btnDesactivar.className   = 'btn-action btn-action--rol';
+        btnDesactivar.textContent = '🚫 Desactivar';
+        btnDesactivar.dataset.id     = usuario.id;
+        btnDesactivar.dataset.action = 'soft-delete';
+        btnDesactivar.dataset.nombre = usuario.name;
+
+        // Botón Hard Delete (Eliminar permanente)
         const btnEliminar = document.createElement('button');
         btnEliminar.type        = 'button';
         btnEliminar.className   = 'btn-action btn-action--delete';
-        btnEliminar.textContent = '🗑 Eliminar';
+        btnEliminar.textContent = '🔥 Borrado Forzoso';
         btnEliminar.dataset.id     = usuario.id;
+        btnEliminar.dataset.action = 'hard-delete';
         btnEliminar.dataset.nombre = usuario.name;
 
+        divAcciones.appendChild(btnDesactivar);
         divAcciones.appendChild(btnEliminar);
         celdaAcciones.appendChild(divAcciones);
 
@@ -285,34 +296,45 @@ async function renderizarTablaUsuarios(contenedor) {
     // Listener delegado en el tbody: maneja todos los botones eliminar de una vez
     // Se evita registrar un listener individual por cada botón
     tbody.addEventListener('click', async function(event) {
-
-        // closest('[data-id]') sube desde el elemento clicado hasta el botón con data-id
         const boton = event.target.closest('[data-id]');
         if (!boton) return;
 
         const userId        = boton.dataset.id;
         const nombreUsuario = boton.dataset.nombre;
+        const accion        = boton.dataset.action;
 
-        // Se pide confirmación con SweetAlert2 antes de eliminar
-        // buttonsStyling: false es necesario para que customClass funcione en los botones
-        // Se usa mostrarConfirmacion centralizado en lugar de Swal directo.
+        if (accion === 'soft-delete') {
+            const confirmado = await mostrarConfirmacion(
+                '¿Desactivar usuario?',
+                `"${nombreUsuario}" ya no podrá iniciar sesión, pero sus datos se conservarán.`,
+                'Sí, desactivar'
+            );
+            if (!confirmado) return;
+
+            // Llamada al endpoint de actualización (Soft Delete)
+            const exitoso = await actualizarUsuario(userId, { activo: false });
+            if (exitoso) {
+                await mostrarNotificacion('Usuario desactivado (Soft Delete)', 'exito');
+                await renderizarTablaUsuarios(contenedor);
+            }
+            return;
+        }
+
+        if (accion === 'hard-delete') {
         const confirmado = await mostrarConfirmacion(
-            '¿Eliminar usuario?',
-            `"${nombreUsuario}" será eliminado permanentemente.`,
-            'Sí, eliminar'
+                '¿BORRADO FORZOSO?',
+                `⚠️ ADVERTENCIA: "${nombreUsuario}" y todas sus tareas serán eliminadas permanentemente de la base de datos.`,
+                'SÍ, BORRAR TODO'
         );
-
         if (!confirmado) return;
 
-        // Se llama a la capa API para eliminar el usuario del servidor
         const exitoso = await eliminarUsuario(userId);
-
         if (exitoso) {
-            // Se notifica el éxito de la eliminación con el módulo centralizado.
-            await mostrarNotificacion('Usuario eliminado correctamente', 'exito');
+                await mostrarNotificacion('Usuario borrado permanentemente (Hard Delete)', 'exito');
             await renderizarTablaUsuarios(contenedor);
         } else {
             await mostrarNotificacion('Error al eliminar el usuario', 'error');
+        }
         }
     });
 }
