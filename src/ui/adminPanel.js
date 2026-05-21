@@ -260,16 +260,16 @@ async function renderizarTablaUsuarios(contenedor) {
         const divAcciones   = document.createElement('div');
         divAcciones.className = 'task-actions';
 
-        // Botón Soft Delete (Desactivar)
+        // Botón Soft Delete (Desactivar con icono de candado)
         const btnDesactivar = document.createElement('button');
         btnDesactivar.type        = 'button';
         btnDesactivar.className   = 'btn-action btn-action--rol';
-        btnDesactivar.textContent = '🚫 Desactivar';
+        btnDesactivar.textContent = '🔒 Desactivar';
         btnDesactivar.dataset.id     = usuario.id;
         btnDesactivar.dataset.action = 'soft-delete';
         btnDesactivar.dataset.nombre = usuario.name;
 
-        // Botón Hard Delete (Eliminar permanente)
+        // Botón Hard Delete (Borrado Forzoso)
         const btnEliminar = document.createElement('button');
         btnEliminar.type        = 'button';
         btnEliminar.className   = 'btn-action btn-action--delete';
@@ -321,20 +321,20 @@ async function renderizarTablaUsuarios(contenedor) {
         }
 
         if (accion === 'hard-delete') {
-        const confirmado = await mostrarConfirmacion(
+            const confirmado = await mostrarConfirmacion(
                 '¿BORRADO FORZOSO?',
                 `⚠️ ADVERTENCIA: "${nombreUsuario}" y todas sus tareas serán eliminadas permanentemente de la base de datos.`,
                 'SÍ, BORRAR TODO'
-        );
-        if (!confirmado) return;
+            );
+            if (!confirmado) return;
 
-        const exitoso = await eliminarUsuario(userId);
-        if (exitoso) {
+            const exitoso = await eliminarUsuario(userId);
+            if (exitoso) {
                 await mostrarNotificacion('Usuario borrado permanentemente (Hard Delete)', 'exito');
-            await renderizarTablaUsuarios(contenedor);
-        } else {
-            await mostrarNotificacion('Error al eliminar el usuario', 'error');
-        }
+                await renderizarTablaUsuarios(contenedor);
+            } else {
+                await mostrarNotificacion('Error al eliminar el usuario', 'error');
+            }
         }
     });
 }

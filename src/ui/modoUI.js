@@ -395,10 +395,6 @@ function crearFilaTareaInstructor(tarea, indice) {
     const contenedor    = document.createElement('div');
     contenedor.classList.add('task-actions');
 
-    contenedor.appendChild(btnEditar);
-    contenedor.appendChild(btnSoftDelete);
-    contenedor.appendChild(btnEliminar);
-    celdaAcciones.appendChild(contenedor);
     // Botón Editar — abre el modal de edición de tarea (el mismo del admin)
     const btnEditar = document.createElement('button');
     btnEditar.textContent = '✏️ Editar';
@@ -2033,13 +2029,13 @@ export function registrarEventosNavegacion() {
                     password: inputPassword.value,
                 });
 
-                // Si el backend no incluye el email en datos.user, lo tomamos del campo del formulario
-                if (!datos.user.email) {
-                    const usuarioConEmail = { ...datos.user, email: inputEmail.value.trim() };
-                    guardarSesion({ ...datos, user: usuarioConEmail });
-                } else {
-                    guardarSesion(datos);
+                // Control de seguridad: asegurar que el objeto usuario tenga el email
+                const usuarioFinal = { ...datos.user };
+                if (!usuarioFinal.email) {
+                    usuarioFinal.email = inputEmail.value.trim();
                 }
+                
+                guardarSesion({ ...datos, user: usuarioFinal });
 
                 // Mostrar saludo personalizado con el rol
                 const etiquetaRol = datos.user.role === 'admin' ? 'Administrador' : 'Usuario';
