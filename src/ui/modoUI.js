@@ -16,6 +16,7 @@ import {
     actualizarTarea,
 } from '../api/tareasApi.js';
 
+import { API_BASE_URL, API_PREFIX } from '../utils/config.js';
 import {
     obtenerTodosLosUsuarios,
     eliminarUsuario,
@@ -81,7 +82,7 @@ async function inicializarInformacionSistema(usuario, modo) {
         const session = JSON.parse(localStorage.getItem('usuarioActual'));
         const token = session?.accessToken || session?.token;
 
-        const response = await fetch('http://localhost:3000/api/system/network-ip', {
+        const response = await fetch(`${API_BASE_URL}${API_PREFIX}/system/network-ip`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -383,8 +384,8 @@ function crearFilaTareaInstructor(tarea, indice) {
     const celdaEstado = document.createElement('td');
     // Reutilizar la misma función de formato de estado que el panel admin
     const badgeEstado = document.createElement('span');
-    badgeEstado.classList.add('status-badge', `status-badge--${tarea.status}`);
-    badgeEstado.textContent = tarea.status.replace(/_/g, ' ');
+    badgeEstado.classList.add('status-badge', `status-${tarea.status}`);
+    badgeEstado.textContent = formatearEstado(tarea.status);
     celdaEstado.appendChild(badgeEstado);
 
     const celdaUsuario = document.createElement('td');
@@ -400,13 +401,26 @@ function crearFilaTareaInstructor(tarea, indice) {
     btnEditar.classList.add('btn-action', 'btn-action--edit');
     btnEditar.type = 'button';
     btnEditar.addEventListener('click', function() {
-        // abrirModalEditarTarea usa el modal existente id="editModal" del index.html
-        abrirModalEditarTarea(tarea);
+        // Se usa el manejador específico para el instructor
+        manejarEdicionTareaInstructor(tarea);
     });
 
-    // Botón Eliminar — pide confirmación antes de eliminar
+    // Botón Soft Delete (Cambiar estado a borrado)
+    const btnSoftDelete = document.createElement('button');
+    btnSoftDelete.textContent = '🚫 Desactivar';
+    btnSoftDelete.classList.add('btn-action', 'btn-action--rol');
+    btnSoftDelete.type = 'button';
+    btnSoftDelete.addEventListener('click', async function() {
+        const tareaActualizada = await actualizarTarea(tarea.id, { status: 'completada', hidden: true });
+        if (tareaActualizada) {
+            await mostrarNotificacion('Tarea archivada (Soft Delete)', 'exito');
+            cargarTareasInstructor();
+        }
+    });
+
+    // Botón Hard Delete (Eliminar permanente)
     const btnEliminar = document.createElement('button');
-    btnEliminar.textContent = '🗑️ Eliminar';
+    btnEliminar.textContent = '🔥 Hard Delete';
     btnEliminar.classList.add('btn-action', 'btn-action--delete');
     btnEliminar.type = 'button';
     btnEliminar.addEventListener('click', async function() {
@@ -429,6 +443,7 @@ function crearFilaTareaInstructor(tarea, indice) {
     });
 
     contenedor.appendChild(btnEditar);
+    contenedor.appendChild(btnSoftDelete);
     contenedor.appendChild(btnEliminar);
     celdaAcciones.appendChild(contenedor);
 
@@ -970,6 +985,47 @@ function formatearEstado(estado) {
         completada:           'Completada',
     };
     return mapa[estado] || estado;
+}
+
+// Maneja la edición de una tarea desde el panel instructor.
+// Abre el modal compartido y registra el listener de guardado.
+function manejarEdicionTareaInstructor(tarea) {
+    mostrarModalEdicion(tarea);
+
+    const formulario = document.getElementById('editTaskForm');
+
+    async function guardarCambiosInstructor(event) {
+        event.preventDefault();
+
+        const tareaId     = document.getElementById('editTaskId').value;
+        const titulo      = document.getElementById('editTaskTitle').value.trim();
+        const descripcion = document.getElementById('editTaskDescription').value.trim();
+        const estado      = document.getElementById('editTaskStatus').value;
+        const comentario  = document.getElementById('editTaskComment').value.trim();
+
+        const datosActualizados = {
+            title:       titulo,
+            description: descripcion,
+            status:      estado,
+            comment:     comentario,
+        };
+
+        const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);
+
+        if (tareaActualizada) {
+            ocultarModalEdicion();
+            // Recargar la vista del instructor para reflejar los cambios
+            cargarTareasInstructor();
+            cargarDashboardInstructor();
+            await mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
+        } else {
+            await mostrarNotificacion('Error al actualizar la tarea', 'error');
+        }
+
+        formulario.removeEventListener('submit', guardarCambiosInstructor);
+    }
+
+    formulario.addEventListener('submit', guardarCambiosInstructor);
 }
 
 // Abre el modal de edición compartido para una tarea del panel admin.
@@ -1969,21 +2025,17 @@ export function registrarEventosNavegacion() {
             try {
                 // Llamada al backend — si falla lanza un Error con el mensaje del servidor
                 const datos = await loginUsuario({
-                email:    inputEmail.value.trim(),     // ← antes era documento
-                password: inputPassword.value,
-            })
+                    email:    inputEmail.value.trim(),
+                    password: inputPassword.value,
+                });
 
-                // Guardar tokens y datos del usuario en localStorage
-                guardarSesion(datos);
-
-                // Si el backend no incluye el email en datos.user, lo tomamos del campo del formulario
-                if (!datos.user.email) {
-                    const emailIngresado = inputEmail.value.trim();
-                    const usuarioConEmail = { ...datos.user, email: emailIngresado };
-                    guardarSesion({ ...datos, user: usuarioConEmail });
-                } else {
-                    guardarSesion(datos);
+                // Control de seguridad: asegurar que el objeto usuario tenga el email
+                const usuarioFinal = { ...datos.user };
+                if (!usuarioFinal.email) {
+                    usuarioFinal.email = inputEmail.value.trim();
                 }
+                
+                guardarSesion({ ...datos, user: usuarioFinal });
 
                 // Mostrar saludo personalizado con el rol
                 const etiquetaRol = datos.user.role === 'admin' ? 'Administrador' : 'Usuario';

@@ -1,52 +1,59 @@
 // src/router/router.js
 // Enrutador SPA adaptado a la arquitectura de show/hide existente.
-// No inyecta HTML dinámico — llama a las funciones activarModo* de modoUI.js.
 
 import { haySesionActiva, obtenerUsuarioSesion } from '../utils/sesion.js';
-import {
-    activarModoInicio,
-    activarModoAdmin,
-    activarModoUsuario,
-    activarModoInstructor,
-} from '../ui/modoUI.js';
 import { mostrarEstadoVacio } from '../ui/tareasUI.js';
+
+// Importación de las nuevas vistas (intermediarios)
+import * as HomeView from '../ui/home.js'; // Referenciado como HomeView para consistencia
+import * as LoginView from '../ui/login.js';
+import * as AdminView from '../ui/admin.js';
+import * as UsuarioView from '../ui/usuario.js';
+import * as InstructorView from '../ui/instructor.js';
 
 // ── Handlers por ruta ────────────────────────────────────────────────────────
 
 function renderLogin() {
-    activarModoInicio();
+    LoginView.render();
 }
 
 function renderAdmin() {
     if (!haySesionActiva()) { navigate('/login'); return; }
     const usuario = obtenerUsuarioSesion();
     if (usuario?.role !== 'admin') { navigate('/login'); return; }
-    activarModoAdmin();
+    AdminView.render();
 }
 
 function renderUsuario() {
     if (!haySesionActiva()) { navigate('/login'); return; }
     const usuario = obtenerUsuarioSesion();
     if (usuario?.role !== 'user') { navigate('/login'); return; }
-    activarModoUsuario();
-    mostrarEstadoVacio();
+    UsuarioView.render();
 }
 
 function renderInstructor() {
     if (!haySesionActiva()) { navigate('/login'); return; }
     const usuario = obtenerUsuarioSesion();
     if (usuario?.role !== 'instructor') { navigate('/login'); return; }
-    activarModoInstructor();
+    InstructorView.render();
 }
 
 // Ruta raíz: redirige según el rol guardado en sesión
 function renderRaiz() {
-    if (!haySesionActiva()) { activarModoInicio(); return; }
+    if (!haySesionActiva()) { 
+        HomeView.render(); 
+        return; 
+    }
+
     const usuario = obtenerUsuarioSesion();
-    if      (usuario?.role === 'admin')       activarModoAdmin();
-    else if (usuario?.role === 'instructor')  activarModoInstructor();
-    else if (usuario?.role === 'user')        { activarModoUsuario(); mostrarEstadoVacio(); }
-    else                                       activarModoInicio();
+    if (usuario?.role === 'admin') AdminView.render();
+    else if (usuario?.role === 'instructor') InstructorView.render();
+    else if (usuario?.role === 'user') { 
+        UsuarioView.render(); 
+        mostrarEstadoVacio(); 
+    } else {
+        HomeView.render();
+    }
 }
 
 // ── Tabla de rutas ───────────────────────────────────────────────────────────
