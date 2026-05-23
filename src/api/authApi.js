@@ -9,6 +9,7 @@
 //   POST /api/auth/refresh -> renovarToken  (lo usa Paulo en fetchConAuth)
 
 import { API_BASE_URL, API_PREFIX } from '../utils/config.js';
+import { extraerDetallesValidacion } from '../utils/apiErrors.js';
 
 // ── LOGIN (ACTUALIZADO) ───────────────────────────────────────────────────────
 // POST /api/auth/login
@@ -23,11 +24,19 @@ export async function loginUsuario({ email, password }) {
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // CAMBIO: se envía email en lugar de documento
         body: JSON.stringify({ email, password }),
     });
     const json = await response.json();
-    if (!response.ok) throw new Error(json.error || json.message || 'Credenciales incorrectas');
+    if (!response.ok) {
+        // Cuando el backend rechaza por Zod, el mensaje principal suele ser
+        // genérico ("Error de validación en los datos enviados") y el detalle
+        // viene en json.errors/details/issues. extraerDetallesValidacion los
+        // aplana en un string para que el usuario vea el campo concreto que
+        // falló sin tener que abrir DevTools.
+        const detalles = extraerDetallesValidacion(json);
+        const base = json.error || json.message || 'Credenciales incorrectas';
+        throw new Error(detalles ? `${base}: ${detalles}` : base);
+    }
     return json.data;
 }
 
@@ -49,9 +58,11 @@ export async function registrarUsuario({ name, documento, email, password }) {
         body: JSON.stringify({ name, documento, email, password }),
     });
     const json = await response.json();
-    // Si el servidor respondió con error (409 email duplicado, 400 validación)
-    // se lanza el error para que el llamador (modoUI.js) lo capture y muestre
-    if (!response.ok) throw new Error(json.message || 'Error al registrar el usuario');
+    if (!response.ok) {
+        const detalles = extraerDetallesValidacion(json);
+        const base = json.message || 'Error al registrar el usuario';
+        throw new Error(detalles ? `${base}: ${detalles}` : base);
+    }
     return json.data;
 }
 

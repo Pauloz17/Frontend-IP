@@ -18,6 +18,7 @@
 //   DELETE /api/tasks/:taskId/users/:userId  -> quitarUsuarioDeTarea
 
 import { API_BASE_URL, API_PREFIX } from '../utils/config.js';
+import { extraerDetallesValidacion } from '../utils/apiErrors.js';
 import { fetchConAuth } from '../utils/fetchConAuth.js';
 
 // ── OBTENER TODAS LAS TAREAS ──────────────────────────────────────────────────
@@ -96,11 +97,19 @@ export async function registrarTarea(datosTarea) {
             body: JSON.stringify(datosTarea),
         });
         const json = await response.json();
-        if (!response.ok) throw new Error(json.message || 'Error al registrar la tarea');
+        if (!response.ok) {
+            // Anexar los detalles de Zod al mensaje genérico cuando vengan,
+            // para que la UI muestre exactamente qué campo falló.
+            const detalles = extraerDetallesValidacion(json);
+            const base = json.message || 'Error al registrar la tarea';
+            throw new Error(detalles ? `${base}: ${detalles}` : base);
+        }
         return json.data;
     } catch (error) {
         console.error('registrarTarea:', error);
-        return null;
+        // Re-lanzamos para que el handler de UI pueda mostrar el mensaje
+        // específico en vez de un genérico "Error al asignar la tarea".
+        throw error;
     }
 }
 

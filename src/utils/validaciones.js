@@ -12,6 +12,29 @@ export function entradaEsValida(value) {
     return value.trim().length > 0;
 }
 
+// ── VALIDACIÓN COMPARTIDA DE COMPLEJIDAD DE CONTRASEÑA ───────────────────────
+// Reglas alineadas con el schema Zod del backend (las mismas que aplica al
+// registrar, cambiar y restablecer contraseña):
+//   - mínimo 8 caracteres
+//   - al menos una minúscula
+//   - al menos una mayúscula
+//   - al menos un número
+//   - al menos un símbolo (cualquier no-alfanumérico)
+//
+// Devuelve { valido: true } cuando pasa, o { valido: false, mensaje } con el
+// PRIMER problema encontrado (orden: vacío → longitud → minúscula → mayúscula
+// → número → símbolo). El mensaje está pensado para mostrarse tal cual al
+// usuario en un span de error o en una notificación.
+export function validarComplejidadPassword(password) {
+    if (!password)                  return { valido: false, mensaje: 'La contraseña es obligatoria' };
+    if (password.length < 8)        return { valido: false, mensaje: 'La contraseña debe tener al menos 8 caracteres' };
+    if (!/[a-z]/.test(password))    return { valido: false, mensaje: 'La contraseña debe incluir al menos una letra minúscula' };
+    if (!/[A-Z]/.test(password))    return { valido: false, mensaje: 'La contraseña debe incluir al menos una letra mayúscula' };
+    if (!/\d/.test(password))       return { valido: false, mensaje: 'La contraseña debe incluir al menos un número' };
+    if (!/[^A-Za-z0-9]/.test(password)) return { valido: false, mensaje: 'La contraseña debe incluir al menos un símbolo (por ejemplo ! @ # $ %)' };
+    return { valido: true };
+}
+
 // Muestra un error en el span de error (si existe) y añade clase visual al input.
 export function mostrarError(elementoError, elementoInput, mensaje) {
     if (elementoError) elementoError.textContent = mensaje;
@@ -337,18 +360,12 @@ export async function validarFormularioRegistro({
         esValido = false;
     }
 
-    // ── Validar Contraseña ────────────────────────────────────────────────────
+    // ── Validar Contraseña (usa el helper compartido validarComplejidadPassword) ──
     const valorPass = passInput ? passInput.value : '';
-
-    if (!valorPass) {
-        const msg = 'La contraseña es obligatoria';
-        mostrarError(passError, passInput, msg);
-        if (!primerMensaje) primerMensaje = msg;
-        esValido = false;
-    } else if (valorPass.length < 6) {
-        const msg = 'La contraseña debe tener al menos 6 caracteres';
-        mostrarError(passError, passInput, msg);
-        if (!primerMensaje) primerMensaje = msg;
+    const resPass = validarComplejidadPassword(valorPass);
+    if (!resPass.valido) {
+        mostrarError(passError, passInput, resPass.mensaje);
+        if (!primerMensaje) primerMensaje = resPass.mensaje;
         esValido = false;
     }
 

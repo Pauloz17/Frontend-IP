@@ -1936,3 +1936,78 @@ body[data-modo="instructor"] { background-color: var(--color-instructor-suave); 
 .bolita-2 { width: 250px; height: 250px; background: #0066ff; bottom: 10%; right: -60px; }
 .bolita-3 { width: 200px; height: 200px; background: #00aaff; top: 40%; left: 15%; }
 .bolita-4 { width: 180px; height: 180px; background: #00ffee; bottom: -60px; left: 30%; }
+
+/* ── CHIPS DE ROLES ─────────────────────────────────────────────────────────
+   Una "chip" es un span en línea con fondo pastel y texto del mismo tono más
+   oscuro. Se usan en la columna "Roles" de la tabla de usuarios (panel admin
+   e instructor) y dentro del modal de gestión de roles. */
+.chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-right: 4px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+.chip--admin       { background: #f3e8ff; color: #6b21a8; }
+.chip--instructor  { background: #fef3c7; color: #92400e; }
+.chip--user        { background: #dbeafe; color: #1e40af; }
+.chip--vacio       { background: #e5e7eb; color: #6b7280; font-style: italic; }
+
+/* ── MODAL DE GESTIÓN DE ROLES ─────────────────────────────────────────────
+   Reutiliza .modal-overlay / .modal / .modal__header / .modal__actions del
+   resto de modales del proyecto. Aquí solo se definen los estilos propios
+   de la lista de checkboxes y el mensaje de error embebido. */
+.rolesModal__loading {
+    text-align: center;
+    color: #6b7280;
+    padding: 20px 0;
+    margin: 0;
+}
+.rolesModal__error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 0 0 12px;
+    font-size: 14px;
+}
+.rolesModal__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0;
+}
+.rolesModal__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.rolesModal__item:hover {
+    background: #f9fafb;
+}
+.rolesModal__item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #6b21a8;
+}
+
+/* Botón "Gestionar roles" — comparte la base de .btn-action pero usa la
+   paleta morada de los roles para distinguirlo del verde de "Ver/Asignar". */
+.btn-action--rol {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+}
+.btn-action--rol:hover {
+    background: #e9d5ff;
+}

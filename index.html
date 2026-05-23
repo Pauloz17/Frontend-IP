@@ -7,7 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<base target="_blank">
 </head>
 <body data-modo="inicio">
 <div class="bolitas-fondo">
@@ -417,6 +416,7 @@
                                 <th scope="col">Documento</th>
                                 <th scope="col">Nombre</th>
                                 <th scope="col">Correo</th>
+                                <th scope="col">Roles</th>
                                 <th scope="col">Acciones</th>
                             </tr>
                         </thead>
@@ -447,9 +447,10 @@
                             <option value="">Todos</option>
                             <option value="pendiente">Pendiente</option>
                             <option value="en_progreso">En Progreso</option>
-                            <!-- Cuarto estado: tareas que el usuario marcó como listas para revisión -->
-                            <option value="pendiente_aprobacion">Pendiente por aprobar</option>
                             <option value="completada">Completada</option>
+                            <!-- "Pendiente por aprobar" se quitó de los filtros por petición del admin
+                                 (no es un estado que se le pueda asignar directamente a una tarea).
+                                 La tarjeta "Por aprobar" del dashboard sigue mostrando el contador. -->
                         </select>
                     </div>
                     <div class="tasks-controls__grupo">
@@ -640,6 +641,7 @@
                                 <th scope="col">Documento</th>
                                 <th scope="col">Nombre</th>
                                 <th scope="col">Correo</th>
+                                <th scope="col">Roles</th>
                                 <th scope="col">Acciones</th>
                             </tr>
                         </thead>
@@ -667,8 +669,8 @@
                             <option value="">Todos</option>
                             <option value="pendiente">Pendiente</option>
                             <option value="en_progreso">En Progreso</option>
-                            <option value="pendiente_aprobacion">Pendiente por aprobar</option>
                             <option value="completada">Completada</option>
+                            <!-- "Pendiente por aprobar" removido del filtro por consistencia con el panel admin. -->
                         </select>
                     </div>
                     <div class="tasks-controls__grupo tasks-controls__grupo--btn">
@@ -706,6 +708,35 @@
     </footer>
 </div>
 
+
+<!-- MODAL GESTIÓN DE ROLES (multi-rol) -->
+<!-- Se abre desde el botón "Gestionar roles" de cada fila de la tabla de usuarios -->
+<!-- del panel admin. Al abrir, carga en paralelo el catálogo de roles y los roles -->
+<!-- actuales del usuario, y renderiza un checkbox por cada rol disponible. -->
+<!-- Al guardar envía PUT /api/users/:id/roles con el array de seleccionados. -->
+<div class="modal-overlay hidden" id="rolesModal">
+    <div class="modal">
+        <div class="modal__header">
+            <!-- El título se sobrescribe con el nombre del usuario al abrir -->
+            <h2 class="modal__title" id="rolesModalTitulo">Roles del usuario</h2>
+            <button class="modal__close" id="rolesModalClose" type="button">✕</button>
+        </div>
+        <div class="modal__body">
+            <!-- Mensaje de error embebido (último rol, rol inválido, etc.) -->
+            <p class="form__error rolesModal__error hidden" id="rolesModalError"></p>
+
+            <!-- Estado de carga inicial mientras llegan las dos peticiones -->
+            <p class="rolesModal__loading" id="rolesModalLoading">Cargando roles…</p>
+
+            <!-- Contenedor donde se renderizan los checkboxes (uno por rol disponible) -->
+            <div class="rolesModal__lista hidden" id="rolesModalLista"></div>
+        </div>
+        <div class="modal__actions">
+            <button type="button" class="btn btn--cancelar" id="rolesModalCancelar">Cancelar</button>
+            <button type="button" class="btn btn--admin-primary" id="rolesModalGuardar">Guardar cambios</button>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL EDICIÓN DE TAREA -->
 <div class="modal-overlay hidden" id="editModal">
@@ -830,7 +861,7 @@
                     type="password"
                     id="registroPassword"
                     class="form__input"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mín. 8: mayús, minús, número y símbolo"
                     autocomplete="new-password"
                 >
                 <span class="form__error" id="registroPasswordError"></span>
@@ -875,7 +906,7 @@
                 </div>
                 <div class="form__group">
                     <label for="passwordNueva" class="form__label">Nueva contraseña</label>
-                    <input type="password" id="passwordNueva" class="form__input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                    <input type="password" id="passwordNueva" class="form__input" placeholder="Mín. 8: mayús, minús, número y símbolo" autocomplete="new-password">
                     <span class="form__error" id="passwordNuevaError"></span>
                 </div>
                 <div class="form__group">
@@ -939,7 +970,7 @@
                 <form id="olvidoNuevaPasswordForm" class="form" novalidate>
                     <div class="form__group">
                         <label for="olvidoNuevaPassword" class="form__label">Nueva contraseña</label>
-                        <input type="password" id="olvidoNuevaPassword" class="form__input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                        <input type="password" id="olvidoNuevaPassword" class="form__input" placeholder="Mín. 8: mayús, minús, número y símbolo" autocomplete="new-password">
                         <span class="form__error" id="olvidoNuevaPasswordError"></span>
                     </div>
                     <div class="form__group">

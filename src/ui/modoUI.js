@@ -17,12 +17,15 @@ import {
 } from '../api/tareasApi.js';
 
 import { API_BASE_URL, API_PREFIX } from '../utils/config.js';
+import { fetchConAuth } from '../utils/fetchConAuth.js';
 import {
     obtenerTodosLosUsuarios,
     eliminarUsuario,
     actualizarUsuario,
-    cambiarRolUsuario,          // ← nueva función
     cambiarPassword,
+    obtenerRolesDisponibles,
+    obtenerRolesDeUsuario,
+    reemplazarRolesDeUsuario,
 } from '../api/usuariosApi.js';
 
 import {
@@ -33,19 +36,17 @@ import {
 import { filtrarTareas }  from '../utils/filtros.js';
 
 import { mostrarModalEdicion, ocultarModalEdicion, agregarTareaATabla } from './tareasUI.js';
-
+import { tienePermiso, obtenerUsuarioId, guardarSesion, guardarRefreshToken, obtenerUsuarioSesion, obtenerRoles, cerrarSesion } from '../utils/sesion.js';
 import { ordenarTareas }  from '../utils/ordenamiento.js';
 
 import { exportarTareasJSON } from '../utils/exportacion.js';
 
 // Se agrega validarFormularioRegistro a los imports de validaciones
 // Este import conecta modoUI.js con la nueva función que valida los 5 campos del modal
-import { validarFormularioUsuario, validarFormularioTarea, validarFormularioLogin, validarFormularioRegistro } from '../utils/validaciones.js';
+import { validarFormularioTarea, validarFormularioLogin, validarFormularioRegistro, validarComplejidadPassword } from '../utils/validaciones.js';
 
 // Agregar junto a los otros imports al inicio de modoUI.js:
 import { loginUsuario, registrarUsuario, forgotPassword, verifyResetCode, resetPassword } from '../api/authApi.js';
-
-import { guardarSesion, cerrarSesion, obtenerUsuarioSesion } from '../utils/sesion.js';
 
 // ── NUEVA FUNCIÓN: GESTIÓN DE IP Y BIENVENIDA POR ROL ────────────────────────
 /**
@@ -59,14 +60,21 @@ async function inicializarInformacionSistema(usuario, modo) {
 
     if (!usuario || !welcomeEl) return;
 
-    // 2. Definir texto de bienvenida según el ROL
+    // 2. Definir texto de bienvenida según la jerarquía de roles
     const nombresRoles = {
         'admin': 'Administrador',
         'instructor': 'Instructor',
         'user': 'Usuario'
     };
     
-    const rolTexto = nombresRoles[usuario.role] || 'Usuario';
+    // Si el usuario tiene múltiples roles, buscamos el de mayor jerarquía para el saludo
+    const listaRoles = Array.isArray(usuario.roles) 
+        ? usuario.roles.map(r => typeof r === 'string' ? r : r.name) 
+        : [usuario.role];
+
+    const rolPrincipal = listaRoles.includes('admin') ? 'admin' : (listaRoles.includes('instructor') ? 'instructor' : 'user');
+    const rolTexto = nombresRoles[rolPrincipal] || 'Usuario';
+    
     welcomeEl.textContent = `Bienvenido, ${rolTexto}`;
 
     // 3. Estilo especial si el correo es el tuyo
@@ -76,25 +84,15 @@ async function inicializarInformacionSistema(usuario, modo) {
         welcomeEl.style.textShadow = '0 0 8px rgba(255, 204, 0, 0.4)';
     }
 
-    // 4. Obtener la IP del servidor (backend con ipconfig)
+    // 4. Obtener la IP del servidor (backend con ipconfig).
+    // Se usa fetchConAuth para que el header Authorization se inyecte desde
+    // la fuente correcta (key 'accessToken') y para que el silent-refresh
+    // funcione si el token expiró justo en este momento.
     try {
-        // Obtenemos el token desde localStorage (clave usuarioActual)
-        const session = JSON.parse(localStorage.getItem('usuarioActual'));
-        const token = session?.accessToken || session?.token;
-
-        const response = await fetch(`${API_BASE_URL}${API_PREFIX}/system/network-ip`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
+        const response = await fetchConAuth(`${API_BASE_URL}${API_PREFIX}/system/network-ip`);
         if (response.ok) {
             const data = await response.json();
-            // Mostramos la IP devuelta por el servidor
             if (ipEl) ipEl.textContent = data.ip || 'Localhost';
-            
-            // Tip: Si quieres que el usuario sepa que puede entrar desde otro PC:
             console.log(`Acceso red local: http://${data.ip}:3000`);
         } else {
             if (ipEl) ipEl.textContent = 'Error de conexión';
@@ -102,6 +100,27 @@ async function inicializarInformacionSistema(usuario, modo) {
     } catch (error) {
         console.error('Error al obtener la IP del sistema:', error);
         if (ipEl) ipEl.textContent = 'Servidor Offline';
+    }
+}
+
+/**
+ * Evalúa permisos atómicos y limpia el DOM de elementos no autorizados.
+ */
+export function verificarInterfaz() {
+    // 1. REGLA: Si carece de tasks.create, ocultar el botón/card
+    if (!tienePermiso('tasks.create')) {
+        const cardCrear = document.getElementById('cardCrearTareas');
+        const cardCrearInstr = document.getElementById('instrCardCrearTareas');
+        if (cardCrear) cardCrear.remove();
+        if (cardCrearInstr) cardCrearInstr.remove();
+    }
+
+    // 2. REGLA: Si carece de users.view, remover el menú de gestión
+    if (!tienePermiso('users.view')) {
+        const cardUsers = document.getElementById('cardUsuarios');
+        const navUsers = document.getElementById('toggleUsuarios'); 
+        if (cardUsers) cardUsers.remove();
+        if (navUsers) navUsers.remove();
     }
 }
 
@@ -129,10 +148,30 @@ function ocultarTodo() {
     if (vistaInstructor) vistaInstructor.classList.add('hidden');
 }
 
+// Actualiza la URL (path real) para reflejar la vista o modal activo.
+// Usa history.pushState — la URL queda en el historial del navegador así que
+// el botón "atrás" funciona naturalmente. El router al recibir popstate
+// re-renderiza la vista correspondiente.
+//
+// Si la URL ya coincide, no hace nada (evita duplicar entradas del historial).
+function _actualizarPath(path) {
+    if (window.location.pathname === path) return;
+    window.history.pushState({}, '', path);
+}
+
+// Igual que _actualizarPath pero usa replaceState — no agrega al historial.
+// Útil al sincronizar la URL después de un login para que "atrás" no vuelva
+// al login.
+function _reemplazarPath(path) {
+    if (window.location.pathname === path) return;
+    window.history.replaceState({}, '', path);
+}
+
 export function activarModoInicio() {
     ocultarTodo();
     pantallaInicio.classList.remove('hidden');
     document.body.dataset.modo = 'inicio';
+    _actualizarPath('/login');
     // Limpiar los campos del formulario para no exponer datos del usuario anterior
     // Esto es especialmente importante en computadores compartidos
     limpiarFormularioLogin();
@@ -149,6 +188,7 @@ export async function activarModoUsuario() {
     ocultarTodo();
     vistaUsuario.classList.remove('hidden');
     document.body.dataset.modo = 'usuario';
+    _actualizarPath('/usuario');
 
     // Leer los datos del usuario desde el token guardado en localStorage
     // obtenerUsuarioSesion() viene de src/utils/sesion.js y parsea el JSON del localStorage
@@ -225,11 +265,16 @@ export async function activarModoAdmin() {
     ocultarTodo();
     vistaAdmin.classList.remove('hidden');
     document.body.dataset.modo = 'admin';
+    _actualizarPath('/admin');
     // Carga inicial en paralelo: no bloqueamos la UI
     cargarDashboard();
     cargarTablaUsuarios();
     cargarTodasLasTareas();
     // Se inicializa el dropdown de usuarios de la card "Crear Tarea"
+    if (tienePermiso('tasks.create')) {
+        await inicializarDropdownUsuarios();
+    }
+
     // await garantiza que los checkboxes están cargados antes de continuar
     await inicializarDropdownUsuarios();
 
@@ -246,6 +291,7 @@ export async function activarModoInstructor() {
     ocultarTodo();
     vistaInstructor.classList.remove('hidden');
     document.body.dataset.modo = 'instructor';
+    _actualizarPath('/instructor');
 
     // Cargar datos en paralelo: no bloqueamos la UI mientras carga
     cargarDashboardInstructor();
@@ -315,6 +361,11 @@ async function cargarTablaUsuariosInstructor() {
         const celdaEmail = document.createElement('td');
         celdaEmail.textContent = usuario.email;
 
+        // Columna Roles — solo lectura. El instructor ve los chips pero NO tiene
+        // botón "Gestionar roles" (la gestión de roles sigue siendo solo de admin).
+        const celdaRoles = document.createElement('td');
+        celdaRoles.appendChild(crearChipsDeRoles(_extraerRolesDeUsuario(usuario)));
+
         const celdaAcciones = document.createElement('td');
         const contenedor    = document.createElement('div');
         contenedor.classList.add('task-actions');
@@ -335,6 +386,7 @@ async function cargarTablaUsuariosInstructor() {
         fila.appendChild(celdaDoc);
         fila.appendChild(celdaNombre);
         fila.appendChild(celdaEmail);
+        fila.appendChild(celdaRoles);
         fila.appendChild(celdaAcciones);
 
         tbody.appendChild(fila);
@@ -537,6 +589,9 @@ async function cargarDashboard() {
     if (el.completada) el.completada.textContent  = data.completadas;
 }
 
+// REGLA DE NEGOCIO: Mostrar tareas filtradas por estado (ya implementado en aplicarFiltrosAdmin)
+// Se asegura que el dashboard local siempre cuente los 4 estados incluyendo 'pendiente_aprobacion'
+
 // ── TABLA USUARIOS ────────────────────────────────────────────────────────────
 
 export async function cargarTablaUsuarios() {
@@ -578,12 +633,210 @@ export async function cargarTablaUsuarios() {
     });
 }
 
+// ── HELPERS DE MULTI-ROL ──────────────────────────────────────────────────────
+
+// Normaliza el array de roles que viene de la API o del usuario en sesión.
+// Backend nuevo:  usuario.roles = ['admin', 'instructor']   (strings)
+// Backend nuevo:  usuario.roles = [{ name: 'admin', ... }]  (objetos con permisos)
+// Backend legacy: usuario.role  = 'admin'                    (string único)
+// Si no hay nada, devuelve [] para que se muestre el placeholder "sin roles".
+function _extraerRolesDeUsuario(usuario) {
+    if (!usuario) return [];
+    if (Array.isArray(usuario.roles) && usuario.roles.length > 0) {
+        return usuario.roles.map(r => (typeof r === 'string' ? r : r && r.name)).filter(Boolean);
+    }
+    if (typeof usuario.role === 'string' && usuario.role) return [usuario.role];
+    return [];
+}
+
+// Devuelve un DocumentFragment con un <span class="chip chip--{nombre}"> por cada
+// rol. Si la lista viene vacía agrega un único chip placeholder "sin roles".
+function crearChipsDeRoles(roles) {
+    const frag = document.createDocumentFragment();
+    if (!Array.isArray(roles) || roles.length === 0) {
+        const span = document.createElement('span');
+        span.classList.add('chip', 'chip--vacio');
+        span.textContent = 'sin roles';
+        frag.appendChild(span);
+        return frag;
+    }
+    roles.forEach(nombre => {
+        const span = document.createElement('span');
+        span.classList.add('chip', `chip--${nombre}`);
+        span.textContent = nombre;
+        frag.appendChild(span);
+    });
+    return frag;
+}
+
+// Traduce los códigos de error del backend a mensajes en español.
+// Centralizado aquí para que toda la UI de roles hable el mismo lenguaje.
+// Para 401 además limpia la sesión y vuelve a la pantalla de inicio.
+function _manejarErrorRoles(status, message) {
+    if (status === 401) {
+        cerrarSesion();
+        mostrarNotificacion('Sesión expirada, vuelve a iniciar sesión', 'advertencia');
+        activarModoInicio();
+        return null;
+    }
+    if (status === 403) return 'No tienes permisos para esta acción';
+    if (status === 400 && /último rol/i.test(message || '')) return message;
+    if (status === 400 && /no existen en el sistema/i.test(message || '')) return 'Rol no válido';
+    return message || 'No se pudo completar la operación';
+}
+
+// ── MODAL DE GESTIÓN DE ROLES ─────────────────────────────────────────────────
+
+// Estado local del modal — qué usuario se está editando ahora mismo.
+// Se setea al abrir el modal y se consume al guardar.
+let _usuarioEnEdicionRoles = null;
+let _listenersRolesModalRegistrados = false;
+
+// Abre el modal y carga en paralelo el catálogo de roles y los roles actuales
+// del usuario. Mientras llegan las dos peticiones se muestra "Cargando roles…".
+async function abrirModalRoles(usuario) {
+    _usuarioEnEdicionRoles = usuario;
+
+    const modal     = document.getElementById('rolesModal');
+    const titulo    = document.getElementById('rolesModalTitulo');
+    const loading   = document.getElementById('rolesModalLoading');
+    const lista     = document.getElementById('rolesModalLista');
+    const error     = document.getElementById('rolesModalError');
+    const btnGuardar = document.getElementById('rolesModalGuardar');
+    if (!modal || !lista) return;
+
+    // Registrar listeners una sola vez (cerrar, cancelar, guardar)
+    _registrarListenersModalRoles();
+
+    // Reset visual: limpiar checkboxes anteriores, ocultar error, mostrar loading
+    while (lista.firstChild) lista.removeChild(lista.firstChild);
+    lista.classList.add('hidden');
+    error.classList.add('hidden');
+    error.textContent = '';
+    loading.classList.remove('hidden');
+    titulo.textContent = `Roles de ${usuario.name}`;
+    btnGuardar.disabled = true;
+
+    modal.classList.remove('hidden');
+
+    // Las dos peticiones son independientes — Promise.all para que la espera
+    // sea una sola y no se vea el modal "saltando" mientras llega cada una.
+    const [disponibles, actuales] = await Promise.all([
+        obtenerRolesDisponibles(),
+        obtenerRolesDeUsuario(usuario.id),
+    ]);
+
+    if (!disponibles) {
+        loading.textContent = 'No se pudo cargar el catálogo de roles.';
+        return;
+    }
+
+    // `actuales` puede venir null si falló esa petición; en ese caso pre-marcamos
+    // con lo que ya tenemos del objeto usuario para no perder contexto.
+    const rolesActuales = Array.isArray(actuales) ? actuales : _extraerRolesDeUsuario(usuario);
+
+    // Render dinámico: un <label><input type="checkbox" value="rol"> rol</label>
+    // por cada rol del catálogo. Los que ya tiene el usuario quedan pre-marcados.
+    // Aunque la API ya normaliza a strings, hacemos una defensa extra aquí por
+    // si el backend cambia de forma — un objeto convertido a string daría
+    // 'chip--[object Object]' (con espacio), que classList.add rechaza.
+    disponibles.forEach(rolBruto => {
+        const nombreRol = typeof rolBruto === 'string'
+            ? rolBruto
+            : (rolBruto && (rolBruto.name || rolBruto.nombre)) || null;
+        if (!nombreRol) return;
+
+        const label = document.createElement('label');
+        label.classList.add('rolesModal__item');
+
+        const input = document.createElement('input');
+        input.type    = 'checkbox';
+        input.value   = nombreRol;
+        input.checked = rolesActuales.includes(nombreRol);
+
+        const texto = document.createElement('span');
+        texto.classList.add('chip', `chip--${nombreRol}`);
+        texto.textContent = nombreRol;
+
+        label.appendChild(input);
+        label.appendChild(texto);
+        lista.appendChild(label);
+    });
+
+    loading.classList.add('hidden');
+    lista.classList.remove('hidden');
+    btnGuardar.disabled = false;
+}
+
+function _cerrarModalRoles() {
+    const modal = document.getElementById('rolesModal');
+    if (modal) modal.classList.add('hidden');
+    _usuarioEnEdicionRoles = null;
+}
+
+// Envía PUT /api/users/:id/roles con el array de seleccionados. Si el backend
+// rechaza con 400/401/403 se muestra el mensaje dentro del modal SIN cerrarlo
+// (excepto en 401, donde se cierra y se redirige al login).
+async function _guardarRolesUsuario() {
+    if (!_usuarioEnEdicionRoles) return;
+    const usuario = _usuarioEnEdicionRoles;
+
+    const modal      = document.getElementById('rolesModal');
+    const error      = document.getElementById('rolesModalError');
+    const btnGuardar = document.getElementById('rolesModalGuardar');
+    if (!modal) return;
+
+    // Recolectar los checkboxes marcados — el `value` es el nombre del rol.
+    const seleccionados = Array.from(
+        modal.querySelectorAll('input[type=checkbox]:checked')
+    ).map(c => c.value);
+
+    btnGuardar.disabled = true;
+    error.classList.add('hidden');
+
+    const resultado = await reemplazarRolesDeUsuario(usuario.id, seleccionados);
+
+    if (resultado.ok) {
+        _cerrarModalRoles();
+        await mostrarNotificacion(`Roles de ${usuario.name} actualizados`, 'exito');
+        cargarTablaUsuarios();
+        return;
+    }
+
+    // Error: traducir y mostrar dentro del modal. Si era 401, _manejarErrorRoles
+    // ya cerró sesión y devolvió null — no hay nada más que mostrar.
+    const mensaje = _manejarErrorRoles(resultado.status, resultado.message);
+    if (mensaje === null) {
+        _cerrarModalRoles();
+        return;
+    }
+    error.textContent = mensaje;
+    error.classList.remove('hidden');
+    btnGuardar.disabled = false;
+}
+
+// Los listeners del modal no dependen del usuario editado, así que se registran
+// una sola vez (la primera vez que se abre el modal) y persisten.
+function _registrarListenersModalRoles() {
+    if (_listenersRolesModalRegistrados) return;
+    _listenersRolesModalRegistrados = true;
+
+    const btnClose    = document.getElementById('rolesModalClose');
+    const btnCancelar = document.getElementById('rolesModalCancelar');
+    const btnGuardar  = document.getElementById('rolesModalGuardar');
+    if (btnClose)    btnClose.addEventListener('click', _cerrarModalRoles);
+    if (btnCancelar) btnCancelar.addEventListener('click', _cerrarModalRoles);
+    if (btnGuardar)  btnGuardar.addEventListener('click', _guardarRolesUsuario);
+}
+
 // Construye una fila de la tabla de usuarios del panel admin
 // Ahora incluye tres botones: Ver/Asignar, Editar y Eliminar
 // Parámetros:
 //   usuario — objeto del usuario a representar
 //   indice  — posición en la lista (para el # correlativo)
 function crearFilaUsuario(usuario, indice) {
+    const miId = obtenerUsuarioId();
+
     const fila = document.createElement('tr');
 
     const celdaNum = document.createElement('td');
@@ -598,6 +851,12 @@ function crearFilaUsuario(usuario, indice) {
     const celdaEmail = document.createElement('td');
     celdaEmail.textContent = usuario.email;
 
+    // Columna Roles — un chip por cada rol del array `usuario.roles`.
+    // Si el backend aún devuelve solo el campo legacy `role` (string),
+    // se usa como fallback para no dejar la celda vacía.
+    const celdaRoles = document.createElement('td');
+    celdaRoles.appendChild(crearChipsDeRoles(_extraerRolesDeUsuario(usuario)));
+
     const celdaAcciones = document.createElement('td');
     const contenedor    = document.createElement('div');
     contenedor.classList.add('task-actions');
@@ -609,84 +868,47 @@ function crearFilaUsuario(usuario, indice) {
     btnVer.type = 'button';
     btnVer.addEventListener('click', function() { abrirModalUsuario(usuario); });
 
-    // NUEVO: Botón Editar — abre el modal de edición de datos del usuario
-    // Sigue el mismo patrón de los demás botones de acción del proyecto
-    const btnEditar = document.createElement('button');
-    btnEditar.textContent = '✏️ Editar';
-    btnEditar.classList.add('btn-action', 'btn-action--edit');
-    btnEditar.type = 'button';
-    btnEditar.addEventListener('click', function() { abrirModalEditarUsuario(usuario); });
-
-    // Botón/select para cambiar el rol — ahora soporta 3 opciones: admin, user, instructor
-    // Se usa un select para facilitar la elección entre 3 roles
-    const selectRol = document.createElement('select');
-    selectRol.classList.add('btn-action', 'btn-action--rol');
-    selectRol.title = 'Cambiar rol del usuario';
-
-    // Opción por defecto que muestra el rol actual (no se puede seleccionar)
-    const optDefault = document.createElement('option');
-    optDefault.value    = '';
-    optDefault.disabled = true;
-    optDefault.selected = true;
-    const etiquetasRol = { admin: '👑 Admin', user: '👤 User', instructor: '📚 Instructor' };
-    optDefault.textContent = etiquetasRol[usuario.role] || usuario.role;
-    selectRol.appendChild(optDefault);
-
-    // Opciones de los otros roles (excluyendo el rol actual del usuario)
-    const todosLosRoles = [
-        { value: 'admin',      label: '👑 Hacer Admin' },
-        { value: 'user',       label: '👤 Hacer User' },
-        { value: 'instructor', label: '📚 Hacer Instructor' },
-    ];
-
-    todosLosRoles.forEach(function(rolOpcion) {
-        // No mostrar el rol que el usuario ya tiene
-        if (rolOpcion.value === usuario.role) return;
-        const opt = document.createElement('option');
-        opt.value       = rolOpcion.value;
-        opt.textContent = rolOpcion.label;
-        selectRol.appendChild(opt);
-    });
-
-    // Al cambiar la selección, confirmar y ejecutar el cambio de rol
-    selectRol.addEventListener('change', async function() {
-        const nuevoRol    = selectRol.value;
-        if (!nuevoRol) return;
-        const etiquetaRol = etiquetasRol[nuevoRol] || nuevoRol;
-
-        const confirmado = await mostrarConfirmacion(
-            `¿Cambiar rol de ${usuario.name}?`,
-            `El usuario pasará a ser ${etiquetaRol}. Tendrá efecto en su próximo inicio de sesión.`,
-            `Sí, hacer ${etiquetaRol}`
-        );
-
-        if (!confirmado) {
-            // Revertir el select si el usuario cancela
-            selectRol.value = '';
-            return;
-        }
-
-        const usuarioActualizado = await cambiarRolUsuario(usuario.id, nuevoRol);
-        if (usuarioActualizado) {
-            await mostrarNotificacion(`Rol de ${usuario.name} actualizado a ${etiquetaRol}`, 'exito');
-            cargarTablaUsuarios();
-        } else {
-            await mostrarNotificacion('Error al cambiar el rol del usuario', 'error');
-            selectRol.value = '';
-        }
-    });
-
-    contenedor.appendChild(selectRol);
+    // Botón "Gestionar roles" — reemplaza al antiguo select de un solo rol.
+    // Abre el modal de checkboxes con el catálogo completo y los roles del usuario
+    // pre-marcados, y permite enviar el set completo en una sola petición PUT.
+    const btnRoles = document.createElement('button');
+    btnRoles.textContent = 'Gestionar roles';
+    btnRoles.classList.add('btn-action', 'btn-action--rol');
+    btnRoles.type = 'button';
+    btnRoles.addEventListener('click', function() { abrirModalRoles(usuario); });
 
     // Botón Eliminar — pide confirmación antes de eliminar
     const btnEliminar = document.createElement('button');
     btnEliminar.textContent = '🗑️ Eliminar';
     btnEliminar.classList.add('btn-action', 'btn-action--delete');
     btnEliminar.type = 'button';
+
+    // REGLA: El botón se oculta si el admin no tiene permiso para borrar usuarios.
+    // Antes se chequeaba 'tasks.delete' (permiso de tareas, copy/paste incorrecto),
+    // lo que escondía el botón para casi todos los admins porque ese permiso no
+    // está en el rol admin del backend multi-rol.
+    if (!tienePermiso('users.delete')) {
+        btnEliminar.style.display = 'none';
+    }
+
     btnEliminar.addEventListener('click', async function() {
+        // REGLA DE NEGOCIO: Un usuario no puede eliminarse a sí mismo (Protección de identidad)
+        if (usuario.id === miId) {
+            await mostrarNotificacion('No puedes eliminar tu propia cuenta', 'advertencia');
+            return;
+        }
+
+        // REGLA DE NEGOCIO: Usuarios con tareas pendientes no se pueden eliminar.
+        // El backend también rechaza este caso, pero validar aquí evita un viaje
+        // al servidor y le da feedback inmediato al admin.
+        if (usuario.hasPendingTasks) {
+            await mostrarNotificacion('No se puede eliminar un usuario con tareas pendientes', 'error');
+            return;
+        }
+
         const confirmado = await mostrarConfirmacion(
             '¿Eliminar usuario?',
-            `"${usuario.name}" será eliminado permanentemente.`,
+            `"${usuario.name}" será eliminado permanentemente. Esta acción no se puede deshacer.`,
             'Sí, eliminar'
         );
         if (!confirmado) return;
@@ -702,9 +924,27 @@ function crearFilaUsuario(usuario, indice) {
         }
     });
 
-    // Se agregan los tres botones al contenedor de acciones
+    // REGLA: Ocultar el botón eliminar si el ID de la fila es el del usuario logueado
+    if (usuario.id === miId) {
+        btnEliminar.style.display = 'none';
+    }
+
+    // REGLA: El botón "Gestionar roles" requiere permiso users.update.
+    // Si el backend aún no manda permisos finos, lo mostramos siempre para no
+    // bloquear al admin que era el único que veía esta tabla antes.
+    const puedeGestionarRoles = tienePermiso('users.update') || tienePermiso('users.manage_roles') || obtenerRoles().includes('admin');
+    if (!puedeGestionarRoles) {
+        btnRoles.style.display = 'none';
+    }
+
+    // Un usuario no debería poder editar sus propios roles desde la tabla:
+    // prevenimos que se quite admin a sí mismo por accidente.
+    if (usuario.id === miId) {
+        btnRoles.style.display = 'none';
+    }
+
     contenedor.appendChild(btnVer);
-    contenedor.appendChild(btnEditar);
+    contenedor.appendChild(btnRoles);
     contenedor.appendChild(btnEliminar);
     celdaAcciones.appendChild(contenedor);
 
@@ -712,184 +952,10 @@ function crearFilaUsuario(usuario, indice) {
     fila.appendChild(celdaDoc);
     fila.appendChild(celdaNombre);
     fila.appendChild(celdaEmail);
+    fila.appendChild(celdaRoles);
     fila.appendChild(celdaAcciones);
 
     return fila;
-}
-
-// ── MODAL EDITAR USUARIO ──────────────────────────────────────────────────────
-
-// Abre un modal dinámico para editar los datos de un usuario (nombre, correo, documento)
-// Sigue la misma lógica de construcción que abrirModalUsuario: createElement + appendChild
-// Parámetro: usuario — objeto con los datos actuales del usuario a editar
-async function abrirModalEditarUsuario(usuario) {
-
-    // Se cierra cualquier modal de edición de usuario que ya esté abierto
-    cerrarModalEditarUsuarioExistente();
-
-    // Overlay oscuro que cubre toda la pantalla
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-usuario-overlay';
-    overlay.id        = 'modalEditarUsuarioOverlay';
-
-    // Contenedor del modal
-    const modal = document.createElement('div');
-    modal.className = 'modal-usuario';
-
-    // ── Header del modal ──────────────────────────────────────────────────────
-    const header = document.createElement('div');
-    header.className = 'modal-usuario__header';
-
-    const infoTexto = document.createElement('div');
-
-    // Título con el nombre actual del usuario
-    const titulo = document.createElement('h2');
-    titulo.className   = 'modal-usuario__titulo';
-    titulo.textContent = `Editar: ${usuario.name}`;
-
-    const subtitulo = document.createElement('p');
-    subtitulo.className   = 'modal-usuario__subtitulo';
-    subtitulo.textContent = `Documento actual: ${usuario.documento || usuario.id}`;
-
-    infoTexto.appendChild(titulo);
-    infoTexto.appendChild(subtitulo);
-
-    // Botón de cierre en la esquina del header
-    const btnCerrar = document.createElement('button');
-    btnCerrar.className   = 'modal-usuario__cerrar';
-    btnCerrar.type        = 'button';
-    btnCerrar.textContent = '✕';
-    btnCerrar.addEventListener('click', cerrarModalEditarUsuarioExistente);
-
-    header.appendChild(infoTexto);
-    header.appendChild(btnCerrar);
-    modal.appendChild(header);
-
-    // ── Cuerpo: formulario de edición ─────────────────────────────────────────
-    const cuerpo = document.createElement('div');
-    cuerpo.className = 'modal-usuario__asignar';
-
-    const formEditar = document.createElement('form');
-    formEditar.className = 'form';
-
-    // GRUPO DOCUMENTO
-    const grupoDoc = document.createElement('div');
-    grupoDoc.className = 'form__group';
-    const labelDoc = document.createElement('label');
-    labelDoc.setAttribute('for', 'editar-usuario-documento');
-    labelDoc.className   = 'form__label';
-    labelDoc.textContent = 'Número de documento';
-    const inputDoc = document.createElement('input');
-    inputDoc.type        = 'text';
-    inputDoc.id          = 'editar-usuario-documento';
-    inputDoc.className   = 'form__input';
-    inputDoc.placeholder = 'Ej: 1097497124';
-    // Se pre-rellena con el valor actual del usuario
-    inputDoc.value       = usuario.documento || '';
-    grupoDoc.appendChild(labelDoc);
-    grupoDoc.appendChild(inputDoc);
-
-    // GRUPO NOMBRE
-    const grupoNombre = document.createElement('div');
-    grupoNombre.className = 'form__group';
-    const labelNombre = document.createElement('label');
-    labelNombre.setAttribute('for', 'editar-usuario-nombre');
-    labelNombre.className   = 'form__label';
-    labelNombre.textContent = 'Nombre completo';
-    const inputNombre = document.createElement('input');
-    inputNombre.type        = 'text';
-    inputNombre.id          = 'editar-usuario-nombre';
-    inputNombre.className   = 'form__input';
-    inputNombre.placeholder = 'Ej: Paulo Zapata';
-    // Se pre-rellena con el valor actual del usuario
-    inputNombre.value       = usuario.name || '';
-    grupoNombre.appendChild(labelNombre);
-    grupoNombre.appendChild(inputNombre);
-
-    // GRUPO EMAIL
-    const grupoEmail = document.createElement('div');
-    grupoEmail.className = 'form__group';
-    const labelEmail = document.createElement('label');
-    labelEmail.setAttribute('for', 'editar-usuario-email');
-    labelEmail.className   = 'form__label';
-    labelEmail.textContent = 'Correo electrónico';
-    const inputEmail = document.createElement('input');
-    // FEAT #57: type="text" en lugar de "email" para evitar el tooltip nativo del browser.
-    // La validación de formato se hace manualmente en validarFormularioUsuario().
-    inputEmail.type        = 'text';
-    inputEmail.id          = 'editar-usuario-email';
-    inputEmail.className   = 'form__input';
-    inputEmail.placeholder = 'Ej: usuario@correo.com';
-    // Se pre-rellena con el valor actual del usuario
-    inputEmail.value       = usuario.email || '';
-    grupoEmail.appendChild(labelEmail);
-    grupoEmail.appendChild(inputEmail);
-
-    // Botón de submit del formulario de edición
-    const btnGuardar = document.createElement('button');
-    btnGuardar.type      = 'submit';
-    btnGuardar.className = 'btn btn--admin-primary';
-    const spanBtn = document.createElement('span');
-    spanBtn.className   = 'btn__text';
-    spanBtn.textContent = 'Guardar Cambios';
-    btnGuardar.appendChild(spanBtn);
-
-    formEditar.appendChild(grupoDoc);
-    formEditar.appendChild(grupoNombre);
-    formEditar.appendChild(grupoEmail);
-    formEditar.appendChild(btnGuardar);
-
-    // Listener del submit: llama a la API para actualizar y recarga la tabla
-    formEditar.addEventListener('submit', async function(event) {
-        event.preventDefault();
-
-        // FEAT #57: validación completa con mensajes del backend (Zod-matching)
-        const valido = await validarFormularioUsuario({
-            docInput:   inputDoc,
-            nameInput:  inputNombre,
-            emailInput: inputEmail,
-            docError:   null,
-            nameError:  null,
-            emailError: null,
-        });
-        if (!valido) return;
-
-        const documento = inputDoc.value.trim();
-        const nombre    = inputNombre.value.trim();
-        const email     = inputEmail.value.trim();
-
-        // Se llama a la capa API con el id del usuario y los datos nuevos
-        const usuarioActualizado = await actualizarUsuario(usuario.id, {
-            documento,
-            name:  nombre,
-            email,
-        });
-
-        if (usuarioActualizado) {
-            cerrarModalEditarUsuarioExistente();
-            await mostrarNotificacion(`${nombre} fue actualizado correctamente`, 'exito');
-            // Se recarga la tabla para reflejar los datos actualizados
-            cargarTablaUsuarios();
-        } else {
-            await mostrarNotificacion('Error al actualizar el usuario', 'error');
-        }
-    });
-
-    cuerpo.appendChild(formEditar);
-    modal.appendChild(cuerpo);
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    // Clic en el overlay oscuro cierra el modal (igual que el modal de asignar)
-    overlay.addEventListener('click', function(event) {
-        if (event.target === overlay) cerrarModalEditarUsuarioExistente();
-    });
-}
-
-// Cierra y elimina el modal de edición de usuario si existe en el DOM
-function cerrarModalEditarUsuarioExistente() {
-    const existing = document.getElementById('modalEditarUsuarioOverlay');
-    if (existing) existing.remove();
 }
 
 // ── DASHBOARD LOCAL ──────────────────────────────────────────────────────────
@@ -1119,6 +1185,12 @@ function crearFilaTareaAdmin(tarea, indice) {
     btnEliminar.textContent = '🗑️ Eliminar';
     btnEliminar.classList.add('btn-action', 'btn-action--delete');
     btnEliminar.type = 'button';
+
+    // REGLA DE NEGOCIO: Validar permiso atómico para eliminar tareas
+    if (!tienePermiso('tasks.delete')) {
+        btnEliminar.remove(); 
+    }
+
     btnEliminar.addEventListener('click', async function() {
         const confirmado = await mostrarConfirmacion(
             '¿Eliminar tarea?',
@@ -1357,23 +1429,35 @@ export async function abrirModalUsuario(usuario) {
         });
         if (!validoTarea) return;
 
+        // Body: solo se incluyen description / comment cuando NO están vacíos.
+        // Antes mandábamos description: "" y comment: null, y el schema Zod del
+        // backend lo rechazaba con "Error de validación en los datos enviados".
+        // Mandar el campo solo cuando hay contenido funciona en ambos casos
+        // (campo optional con string o sin el campo).
         const datosTarea = {
             title:         titulo,
-            description:   desc,
             status:        estado,
-            comment:       comentario || null,
             assignedUsers: [parseInt(usuario.id, 10) || usuario.id],
         };
+        if (desc)       datosTarea.description = desc;
+        if (comentario) datosTarea.comment     = comentario;
 
-        const tareaCreada = await registrarTarea(datosTarea);
+        // registrarTarea lanza si el backend rechaza — capturamos el error
+        // para mostrar el mensaje específico (incluye los detalles de Zod si
+        // el backend los manda en json.errors/details/issues).
+        let tareaCreada;
+        try {
+            tareaCreada = await registrarTarea(datosTarea);
+        } catch (err) {
+            await mostrarNotificacion(err.message || 'Error al asignar la tarea', 'error');
+            return;
+        }
 
         if (tareaCreada) {
-            // CORRECCIÓN: se cierra el modal automáticamente al crear la tarea.
-            // Antes se rearía el modal llamando de nuevo a abrirModalUsuario(),
-            // lo que provocaba que el usuario tuviera que cerrarlo manualmente.
-            // Ahora se cierra solo y se recargan los datos en segundo plano.
+            // Se cierra el modal automáticamente al crear la tarea y se
+            // recargan los datos en segundo plano antes de notificar éxito.
             cerrarModalUsuarioExistente();
-            cargarTodasLasTareas();  // Recarga inmediata ANTES de la notificación
+            cargarTodasLasTareas();
             cargarDashboard();
             await mostrarNotificacion(`Tarea "${titulo}" asignada correctamente`, 'exito');
         } else {
@@ -1942,8 +2026,10 @@ function registrarListenerCambioPassword() {
                 document.getElementById('passwordActualError').textContent = 'La contraseña actual es obligatoria';
                 esValido = false;
             }
-            if (!nueva || nueva.length < 6) {
-                document.getElementById('passwordNuevaError').textContent = 'La nueva contraseña debe tener al menos 6 caracteres';
+            // Misma regla de complejidad que registro/reset — alineada con el backend
+            const resComplejidad = validarComplejidadPassword(nueva);
+            if (!resComplejidad.valido) {
+                document.getElementById('passwordNuevaError').textContent = resComplejidad.mensaje;
                 esValido = false;
             }
             if (nueva !== confirmar) {
@@ -2023,22 +2109,28 @@ export function registrarEventosNavegacion() {
             if (btnLogin) { btnLogin.disabled = true; btnLogin.textContent = 'Ingresando...'; }
 
             try {
-                // Llamada al backend — si falla lanza un Error con el mensaje del servidor
+                // SOLUCIÓN AL LOGIN: fetch al backend con prevención de pestaña nueva
                 const datos = await loginUsuario({
                     email:    inputEmail.value.trim(),
                     password: inputPassword.value,
                 });
 
-                // Control de seguridad: asegurar que el objeto usuario tenga el email
-                const usuarioFinal = { ...datos.user };
-                if (!usuarioFinal.email) {
-                    usuarioFinal.email = inputEmail.value.trim();
-                }
-                
-                guardarSesion({ ...datos, user: usuarioFinal });
+                // El backend multi-rol manda data.user.roles como array de
+                // objetos { name, permissions }. guardarSesion sabe extraer los
+                // nombres y aplanar los permisos por sí solo cuando se le pasa
+                // el usuario directamente.
+                guardarRefreshToken(datos.refreshToken);
+                guardarSesion(datos.accessToken, datos.user);
 
-                // Mostrar saludo personalizado con el rol
-                const etiquetaRol = datos.user.role === 'admin' ? 'Administrador' : 'Usuario';
+                // Calcular el rol "principal" para el saludo y la redirección.
+                // Jerarquía fija acordada con el equipo: admin > instructor > user.
+                const nombresRolesLogin = Array.isArray(datos.user.roles)
+                    ? datos.user.roles.map(r => (typeof r === 'string' ? r : r.name))
+                    : (datos.user.role ? [datos.user.role] : []);
+                const rolPrincipal = nombresRolesLogin.includes('admin')
+                    ? 'admin'
+                    : (nombresRolesLogin.includes('instructor') ? 'instructor' : 'user');
+
                 if (bienvenidaDiv && bienvenidaTexto) {
                     bienvenidaTexto.textContent = `Sesión iniciada · ${datos.user.name}`;
                     bienvenidaDiv.classList.remove('hidden');
@@ -2047,19 +2139,20 @@ export function registrarEventosNavegacion() {
                 // Pequeña pausa para que el usuario vea el saludo antes de redirigir
                 await new Promise(resolve => setTimeout(resolve, 1200));
 
-                // Redirigir al modo que corresponde según el rol del usuario
-                // Se evalúan los 3 roles posibles: admin, instructor y user
-                // Sin este bloque completo, el instructor aterrizaba en la vista de usuario
-                if (datos.user.role === 'admin') {
-                    // El rol admin activa el panel de administración con CRUD completo
-                    await activarModoAdmin();
-                } else if (datos.user.role === 'instructor') {
-                    // El rol instructor activa el panel docente con paleta verde
-                    // Esta línea faltaba — causaba que instructor viera la vista de usuario
-                    await activarModoInstructor();
+                // Si el usuario intentó entrar a una URL profunda sin sesión,
+                // el router guardó esa ruta como "pendiente". La consumimos
+                // ahora para llevarlo donde realmente quería ir.
+                // Si no hay pendiente, va al panel del rol de mayor jerarquía.
+                const { navigate, tomarRutaPendiente } = await import('../router/router.js');
+                const rutaPendiente = tomarRutaPendiente();
+                if (rutaPendiente) {
+                    navigate(rutaPendiente);
+                } else if (rolPrincipal === 'admin') {
+                    navigate('/admin');
+                } else if (rolPrincipal === 'instructor') {
+                    navigate('/instructor');
                 } else {
-                    // El rol user activa el panel personal con solo sus tareas
-                    activarModoUsuario();
+                    navigate('/usuario');
                 }
 
             } catch (error) {
@@ -2153,6 +2246,43 @@ export function registrarEventosNavegacion() {
         });
     }
 
+    // Búsqueda de usuario en el header del instructor — mismo flujo que admin.
+    // Sin este handler el form se enviaba con la acción por defecto del browser
+    // (recargar la página) y, mientras existía <base target="_blank"> en el
+    // HTML, abría una pestaña nueva con la pantalla de login.
+    const formBusquedaInstr = document.getElementById('instrSearchUserForm');
+    if (formBusquedaInstr) {
+        formBusquedaInstr.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const input   = document.getElementById('instrUserDocument');
+            const termino = (input.value || '').trim().toLowerCase();
+            if (!termino) return;
+
+            const usuarios = await obtenerTodosLosUsuarios();
+            if (!usuarios) {
+                await mostrarNotificacion('Error al buscar usuarios', 'error');
+                return;
+            }
+
+            const encontrado = usuarios.find(u =>
+                u.id.toString()                         === termino ||
+                (u.documento && u.documento.toString() === termino) ||
+                u.name.toLowerCase().includes(termino)
+            );
+
+            if (!encontrado) {
+                await mostrarNotificacion(
+                    `No se encontró ningún usuario con: "${input.value.trim()}"`,
+                    'advertencia'
+                );
+                return;
+            }
+
+            input.value = '';
+            abrirModalUsuario(encontrado);
+        });
+    }
+
     // Formulario de crear tarea en la card "Crear Tarea" del panel admin
     const formCrearTarea = document.getElementById('createTaskForm');
     if (formCrearTarea) {
@@ -2188,14 +2318,18 @@ export function registrarEventosNavegacion() {
                 return;
             }
 
-            // Se construye el objeto de la nueva tarea para enviar al backend
+            // Se construye el objeto de la nueva tarea para enviar al backend.
+            // description y comment solo se incluyen cuando tienen contenido,
+            // porque el schema Zod del backend rechaza "" o null en optionals.
+            const descripcionTexto = descInput    ? descInput.value.trim()    : '';
+            const comentarioTexto  = commentInput ? commentInput.value.trim() : '';
             const datosTarea = {
                 title:         titulo,
-                description:   descInput  ? descInput.value.trim()   : '',
                 status:        estado,
-                comment:       commentInput ? commentInput.value.trim() : '',
                 assignedUsers: assignedUsers,
             };
+            if (descripcionTexto) datosTarea.description = descripcionTexto;
+            if (comentarioTexto)  datosTarea.comment     = comentarioTexto;
 
             // Se llama al backend para crear la tarea
             let tareaCreada;
@@ -2266,15 +2400,27 @@ export function registrarEventosNavegacion() {
                 return;
             }
 
+            // Solo se incluyen description/comment cuando NO están vacíos —
+            // el schema Zod del backend rechaza string vacío o null en estos
+            // campos opcionales.
             const datosTarea = {
                 title:         titulo,
-                description:   desc || undefined,
                 status:        estado,
-                comment:       comentario || null,
                 assignedUsers: usuariosSeleccionados,
             };
+            if (desc)       datosTarea.description = desc;
+            if (comentario) datosTarea.comment     = comentario;
 
-            const tareaCreada = await registrarTarea(datosTarea);
+            // registrarTarea lanza ahora si el backend rechaza — capturamos
+            // para mostrar los detalles de validación que devuelva Zod.
+            let tareaCreada;
+            try {
+                tareaCreada = await registrarTarea(datosTarea);
+            } catch (err) {
+                await mostrarNotificacion(err.message || 'Error al crear la tarea', 'error');
+                return;
+            }
+
             if (tareaCreada) {
                 // Limpiar el formulario tras crear la tarea
                 instrCreateTaskForm.reset();
