@@ -457,22 +457,13 @@ function crearFilaTareaInstructor(tarea, indice) {
         manejarEdicionTareaInstructor(tarea);
     });
 
-    // Botón Soft Delete (Cambiar estado a borrado)
-    const btnSoftDelete = document.createElement('button');
-    btnSoftDelete.textContent = '🚫 Desactivar';
-    btnSoftDelete.classList.add('btn-action', 'btn-action--rol');
-    btnSoftDelete.type = 'button';
-    btnSoftDelete.addEventListener('click', async function() {
-        const tareaActualizada = await actualizarTarea(tarea.id, { status: 'completada', hidden: true });
-        if (tareaActualizada) {
-            await mostrarNotificacion('Tarea archivada (Soft Delete)', 'exito');
-            cargarTareasInstructor();
-        }
-    });
-
-    // Botón Hard Delete (Eliminar permanente)
+    // Único botón de borrado: pide confirmación y elimina la tarea.
+    // Antes había dos botones ("🚫 Desactivar" soft delete y "🔥 Hard Delete"),
+    // pero el soft delete dependía de un campo `hidden` que el backend no
+    // maneja, y tener dos botones de borrar generaba confusión. Se unificó
+    // en un único "Eliminar" consistente con el resto de la app.
     const btnEliminar = document.createElement('button');
-    btnEliminar.textContent = '🔥 Hard Delete';
+    btnEliminar.textContent = '🗑️ Eliminar';
     btnEliminar.classList.add('btn-action', 'btn-action--delete');
     btnEliminar.type = 'button';
     btnEliminar.addEventListener('click', async function() {
@@ -486,7 +477,6 @@ function crearFilaTareaInstructor(tarea, indice) {
         const eliminado = await eliminarTarea(tarea.id);
         if (eliminado) {
             await mostrarNotificacion('Tarea eliminada correctamente', 'exito');
-            // Recargar el instructor panel tras la eliminación
             cargarTareasInstructor();
             cargarDashboardInstructor();
         } else {
@@ -495,7 +485,6 @@ function crearFilaTareaInstructor(tarea, indice) {
     });
 
     contenedor.appendChild(btnEditar);
-    contenedor.appendChild(btnSoftDelete);
     contenedor.appendChild(btnEliminar);
     celdaAcciones.appendChild(contenedor);
 
