@@ -150,6 +150,51 @@ if (btnCrear) {
     return fila;
 }
 
+/**
+ * Crea una fila para la tabla de administración de tareas (Admin/Instructor)
+ */
+export function crearFilaTareaAdmin(tarea, indice, { onEdit, onDelete }) {
+    const fila = document.createElement('tr');
+    fila.innerHTML = `
+        <td>${indice + 1}</td>
+        <td>${tarea.title}</td>
+        <td>${tarea.description || '—'}</td>
+        <td><span class="status-badge status-${tarea.status}">${formatearEstadoTarea(tarea.status)}</span></td>
+        <td>${tarea.assignedUsersDisplay || 'Sin asignar'}</td>
+        <td>
+            <div class="task-actions">
+                <button class="btn-action btn-action--edit" type="button">✏️ Editar</button>
+                <button class="btn-action btn-action--delete" type="button">🗑️ Eliminar</button>
+            </div>
+        </td>
+    `;
+
+    fila.querySelector('.btn-action--edit').onclick = () => onEdit(tarea);
+    const btnDel = fila.querySelector('.btn-action--delete');
+    if (onDelete) btnDel.onclick = () => onDelete(tarea);
+    else btnDel.remove();
+
+    return fila;
+}
+
+/**
+ * Helper para renderizar cualquier dashboard de estadísticas
+ */
+export function renderizarDashboard(data, prefijo = 'dashboard') {
+    const mapeo = {
+        total:      `${prefijo}Total`,
+        pendientes: `${prefijo}Pendiente`,
+        enProgreso: `${prefijo}Progreso`,
+        aprobacion: `${prefijo}Aprobacion`,
+        completadas: `${prefijo}Completada`,
+    };
+
+    Object.entries(mapeo).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = data[key] ?? 0;
+    });
+}
+
 export function agregarTareaATabla(tarea, contador) {
     cuerpoDeLaTabla.appendChild(crearFilaTarea(tarea, contador));
     actualizarContadorTareas(contador + 1);
