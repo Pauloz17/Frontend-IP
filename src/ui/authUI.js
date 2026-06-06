@@ -17,6 +17,20 @@ export function inicializarAuthEvents() {
         formRegistro.addEventListener('submit', manejarRegistro);
     }
 
+    const btnCerrarRegistro = $('registroCloseBtn');
+    if (btnCerrarRegistro) {
+        btnCerrarRegistro.addEventListener('click', cerrarModalRegistro);
+    }
+
+    const registroModal = $('registroModal');
+    if (registroModal) {
+        registroModal.addEventListener('click', (event) => {
+            if (event.target === registroModal) {
+                cerrarModalRegistro();
+            }
+        });
+    }
+
     registrarListenerOlvidoPassword();
 }
 
@@ -69,6 +83,31 @@ function registrarListenerOlvidoPassword() {
     btnAbrir.addEventListener('click', () => {
         $('olvidoPasswordModal').classList.remove('hidden');
         // Resto de la lógica de pasos 1, 2, 3...
+    });
+}
+
+export function abrirModalRegistro() {
+    const registroModal = $('registroModal');
+    if (!registroModal) return;
+    limpiarFormularioRegistro();
+    registroModal.classList.remove('hidden');
+}
+
+function cerrarModalRegistro() {
+    const registroModal = $('registroModal');
+    if (!registroModal) return;
+    registroModal.classList.add('hidden');
+    limpiarFormularioRegistro();
+}
+
+function limpiarFormularioRegistro() {
+    ['registroNombre', 'registroDocumento', 'registroEmail', 'registroPassword', 'registroConfirmar'].forEach(id => {
+        const el = $(id);
+        if (el) { el.value = ''; el.classList.remove('error'); }
+    });
+    ['registroNombreError', 'registroDocumentoError', 'registroEmailError', 'registroPasswordError', 'registroConfirmarError'].forEach(id => {
+        const errorEl = $(id);
+        if (errorEl) { errorEl.textContent = ''; }
     });
 }
 
