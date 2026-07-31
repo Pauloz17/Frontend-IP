@@ -72,8 +72,57 @@ async function manejarLogin(e) {
 
 async function manejarRegistro(e) {
     e.preventDefault();
-    // Lógica de registro extraída de modoUI...
-    // (Implementación simplificada para el ejemplo)
+
+    const nombreInput    = $('registroNombre');
+    const docInput       = $('registroDocumento');
+    const emailInput     = $('registroEmail');
+    const passInput      = $('registroPassword');
+    const confirmarInput = $('registroConfirmar');
+
+    // Validar los 5 campos del modal (misma lógica que el backend con Zod)
+    const valido = await validarFormularioRegistro({
+        nombreInput,
+        nombreError:       $('registroNombreError'),
+        docInput,
+        docError:          $('registroDocumentoError'),
+        emailInput,
+        emailError:        $('registroEmailError'),
+        passInput,
+        passError:         $('registroPasswordError'),
+        confirmarInput,
+        confirmarError:    $('registroConfirmarError'),
+    });
+
+    if (!valido) return;
+
+    // Deshabilitar botón mientras se envía la petición al backend
+    const btn = e.target.querySelector('button[type="submit"]');
+    const textoOriginal = btn ? btn.textContent : 'Crear cuenta';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Creando cuenta...';
+    }
+
+    try {
+        await registrarUsuario({
+            name:      nombreInput.value.trim(),
+            documento: docInput.value.trim(),
+            email:     emailInput.value.trim(),
+            password:  passInput.value,
+        });
+
+        // Registro exitoso: cerrar modal y avisar al usuario
+        cerrarModalRegistro();
+        await mostrarNotificacion('Cuenta creada exitosamente. Ya puedes iniciar sesión.', 'exito');
+    } catch (err) {
+        // Error 409 (email/documento ya existen) o 400 (validación) del backend
+        await mostrarNotificacion(err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+        }
+    }
 }
 
 function registrarListenerOlvidoPassword() {

@@ -140,26 +140,31 @@ function _renderPanel(panel) {
 // Cambia la URL y renderiza la nueva vista. Usa pushState para que
 // quede en el historial (el usuario puede volver atrás).
 export function navigate(path) {
-    if (window.location.pathname === path) {
+    if (_obtenerRutaHash() === path) {
         renderRoute(path);
         return;
     }
-    window.history.pushState({}, '', path);
-    renderRoute(path);
+    window.location.hash = `#${path}`;
 }
 
 // Reemplaza la URL sin agregar al historial. Útil cuando el código sincroniza
 // la URL después de abrir una vista (no queremos que el botón "atrás" vuelva
 // a un estado anterior duplicado).
 export function reemplazarUrl(path) {
-    if (window.location.pathname === path) return;
-    window.history.replaceState({}, '', path);
+    if (_obtenerRutaHash() === path) return;
+    window.history.replaceState({}, '', `#${path}`);
+}
+
+// El hash no llega al servidor: #/admin se puede recargar sin rutas especiales.
+function _obtenerRutaHash() {
+    const hash = window.location.hash.replace(/^#/, '');
+    return hash.startsWith('/') ? hash : '/';
 }
 
 // Render principal: parsea la ruta, valida permisos, muestra el panel
 // correspondiente y abre el modal de la sub-ruta si lo hay.
 export async function renderRoute(rawPath) {
-    const path   = rawPath || window.location.pathname || '/';
+    const path   = rawPath || _obtenerRutaHash();
     const parsed = _parsearRuta(path);
 
     // Ruta no reconocida → al raíz
@@ -222,4 +227,4 @@ export async function renderRoute(rawPath) {
 }
 
 // ── LISTENER DE POPSTATE (botones atrás/adelante del navegador) ──────────────
-window.addEventListener('popstate', () => renderRoute(window.location.pathname));
+window.addEventListener('hashchange', () => renderRoute(_obtenerRutaHash()));

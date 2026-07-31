@@ -197,7 +197,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // exitoso (en el handler de modoUI.js) se navega a esa URL pendiente.
     cerrarSesion();
     mostrarEstadoVacio();
-    renderRoute(window.location.pathname);
+    // El router obtiene la ruta desde el hash actual (#/admin, #/usuario, etc.).
+    renderRoute();
 
     console.log('Aplicación lista.');
 });
