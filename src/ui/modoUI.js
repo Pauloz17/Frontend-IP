@@ -20,7 +20,13 @@ function ocultarTodo() {
     });
 }
 // Cambia la dirección que ves arriba en el navegador
-const _actualizarPath = p => window.location.pathname !== p && window.history.pushState({}, '', p);
+// El router es el dueño de la URL. Esta función solo conserva compatibilidad
+// con llamadas directas sin volver a usar rutas de servidor.
+const _actualizarPath = p => {
+    if (window.location.hash !== `#${p}`) {
+        window.history.replaceState({}, '', `#${p}`);
+    }
+};
 
 // Muestra la pantalla de bienvenida (donde pones tu clave)
 export function activarModoInicio() {
