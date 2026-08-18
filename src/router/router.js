@@ -29,10 +29,10 @@
 import { haySesionActiva, obtenerRoles } from '../utils/sesion.js';
 
 // Vistas-intermediarias (cada una llama a su activarModoX)
-import * as HomeView       from '../ui/home.js';
-import * as LoginView      from '../ui/login.js';
-import * as AdminView      from '../ui/admin.js';
-import * as UsuarioView    from '../ui/usuario.js';
+import * as HomeView from '../ui/home.js';
+import * as LoginView from '../ui/login.js';
+import * as AdminView from '../ui/admin.js';
+import * as UsuarioView from '../ui/usuario.js';
 import * as InstructorView from '../ui/instructor.js';
 
 // ── INTENCIÓN PENDIENTE ──────────────────────────────────────────────────────
@@ -56,9 +56,9 @@ function _esRutaProtegida(path) {
 
 function rolPrincipal() {
     const roles = obtenerRoles();
-    if (roles.includes('admin'))      return 'admin';
+    if (roles.includes('admin')) return 'admin';
     if (roles.includes('instructor')) return 'instructor';
-    if (roles.includes('user'))       return 'user';
+    if (roles.includes('user')) return 'user';
     return null;
 }
 
@@ -89,29 +89,29 @@ function _parsearRuta(path) {
 
     // Sin sub-ruta
     const sinSub = {
-        '/':                   { panel: 'raiz',       accion: null },
-        '/login':              { panel: 'login',      accion: null },
-        '/registro':           { panel: 'login',      accion: 'registro' },
-        '/recuperar-password': { panel: 'login',      accion: 'recuperar-password' },
-        '/admin':              { panel: 'admin',      accion: null },
-        '/usuario':            { panel: 'usuario',    accion: null },
-        '/instructor':         { panel: 'instructor', accion: null },
+        '/': { panel: 'raiz', accion: null },
+        '/login': { panel: 'login', accion: null },
+        '/registro': { panel: 'login', accion: 'registro' },
+        '/recuperar-password': { panel: 'login', accion: 'recuperar-password' },
+        '/admin': { panel: 'admin', accion: null },
+        '/usuario': { panel: 'usuario', accion: null },
+        '/instructor': { panel: 'instructor', accion: null },
     };
     if (sinSub[path]) return { ...sinSub[path], params: {} };
 
     // Sub-rutas con parámetros — uso regex simple
     const patrones = [
-        { re: /^\/admin\/cambiar-password$/,                  panel: 'admin',      accion: 'cambiar-password' },
-        { re: /^\/admin\/crear-tarea$/,                       panel: 'admin',      accion: 'crear-tarea' },
-        { re: /^\/admin\/tareas\/(\d+)\/editar$/,             panel: 'admin',      accion: 'tarea-editar',    paramName: 'id' },
-        { re: /^\/admin\/usuarios\/(\d+)\/roles$/,            panel: 'admin',      accion: 'usuario-roles',   paramName: 'id' },
-        { re: /^\/admin\/usuarios\/(\d+)\/tareas$/,           panel: 'admin',      accion: 'usuario-tareas',  paramName: 'id' },
-        { re: /^\/usuario\/cambiar-password$/,                panel: 'usuario',    accion: 'cambiar-password' },
-        { re: /^\/usuario\/tareas\/(\d+)\/editar$/,           panel: 'usuario',    accion: 'tarea-editar',    paramName: 'id' },
-        { re: /^\/instructor\/cambiar-password$/,             panel: 'instructor', accion: 'cambiar-password' },
-        { re: /^\/instructor\/crear-tarea$/,                  panel: 'instructor', accion: 'crear-tarea' },
-        { re: /^\/instructor\/tareas\/(\d+)\/editar$/,        panel: 'instructor', accion: 'tarea-editar',    paramName: 'id' },
-        { re: /^\/instructor\/usuarios\/(\d+)\/tareas$/,      panel: 'instructor', accion: 'usuario-tareas',  paramName: 'id' },
+        { re: /^\/admin\/cambiar-password$/, panel: 'admin', accion: 'cambiar-password' },
+        { re: /^\/admin\/crear-tarea$/, panel: 'admin', accion: 'crear-tarea' },
+        { re: /^\/admin\/tareas\/(\d+)\/editar$/, panel: 'admin', accion: 'tarea-editar', paramName: 'id' },
+        { re: /^\/admin\/usuarios\/(\d+)\/roles$/, panel: 'admin', accion: 'usuario-roles', paramName: 'id' },
+        { re: /^\/admin\/usuarios\/(\d+)\/tareas$/, panel: 'admin', accion: 'usuario-tareas', paramName: 'id' },
+        { re: /^\/usuario\/cambiar-password$/, panel: 'usuario', accion: 'cambiar-password' },
+        { re: /^\/usuario\/tareas\/(\d+)\/editar$/, panel: 'usuario', accion: 'tarea-editar', paramName: 'id' },
+        { re: /^\/instructor\/cambiar-password$/, panel: 'instructor', accion: 'cambiar-password' },
+        { re: /^\/instructor\/crear-tarea$/, panel: 'instructor', accion: 'crear-tarea' },
+        { re: /^\/instructor\/tareas\/(\d+)\/editar$/, panel: 'instructor', accion: 'tarea-editar', paramName: 'id' },
+        { re: /^\/instructor\/usuarios\/(\d+)\/tareas$/, panel: 'instructor', accion: 'usuario-tareas', paramName: 'id' },
     ];
 
     for (const p of patrones) {
@@ -127,11 +127,11 @@ function _parsearRuta(path) {
 // ── RENDER DE PANEL ──────────────────────────────────────────────────────────
 function _renderPanel(panel) {
     switch (panel) {
-        case 'login':      LoginView.render();      return;
-        case 'admin':      AdminView.render();      return;
-        case 'usuario':    UsuarioView.render();    return;
+        case 'login': LoginView.render(); return;
+        case 'admin': AdminView.render(); return;
+        case 'usuario': UsuarioView.render(); return;
         case 'instructor': InstructorView.render(); return;
-        case 'raiz':       HomeView.render();       return;
+        case 'raiz': HomeView.render(); return;
     }
 }
 
@@ -164,7 +164,7 @@ function _obtenerRutaHash() {
 // Render principal: parsea la ruta, valida permisos, muestra el panel
 // correspondiente y abre el modal de la sub-ruta si lo hay.
 export async function renderRoute(rawPath) {
-    const path   = rawPath || _obtenerRutaHash();
+    const path = rawPath || _obtenerRutaHash();
     const parsed = _parsearRuta(path);
 
     // Ruta no reconocida → al raíz
@@ -188,9 +188,9 @@ export async function renderRoute(rawPath) {
         // raíz: redirige según sesión
         if (!haySesionActiva()) { navigate('/login'); return; }
         const r = rolPrincipal();
-        if (r === 'admin')      { navigate('/admin');      return; }
+        if (r === 'admin') { navigate('/admin'); return; }
         if (r === 'instructor') { navigate('/instructor'); return; }
-        if (r === 'user')       { navigate('/usuario');    return; }
+        if (r === 'user') { navigate('/usuario'); return; }
         navigate('/login');
         return;
     }
@@ -216,6 +216,8 @@ export async function renderRoute(rawPath) {
     const modoEsperado = parsed.panel === 'login' ? 'inicio' : parsed.panel;
     if (document.body.dataset.modo !== modoEsperado) {
         _renderPanel(parsed.panel);
+        const { registrarEventosNavegacion } = await import('../ui/modoUI.js');
+        registrarEventosNavegacion();
     }
 
     // ── Render del modal/acción de la sub-ruta ───────────────────────────────

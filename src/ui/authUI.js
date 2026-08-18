@@ -8,27 +8,29 @@ const $ = id => document.getElementById(id);
 
 export function inicializarAuthEvents() {
     const formLogin = $('loginForm');
-    if (formLogin) {
+    if (formLogin && formLogin.dataset.loginBound !== 'true') {
+        formLogin.dataset.loginBound = 'true';
         formLogin.addEventListener('submit', manejarLogin);
     }
 
     const formRegistro = $('registroForm');
-    if (formRegistro) {
+    if (formRegistro && formRegistro.dataset.registroBound !== 'true') {
+        formRegistro.dataset.registroBound = 'true';
         formRegistro.addEventListener('submit', manejarRegistro);
     }
 
     const btnCerrarRegistro = $('registroCloseBtn');
     if (btnCerrarRegistro) {
-        btnCerrarRegistro.addEventListener('click', cerrarModalRegistro);
+        btnCerrarRegistro.onclick = cerrarModalRegistro;
     }
 
     const registroModal = $('registroModal');
     if (registroModal) {
-        registroModal.addEventListener('click', (event) => {
+        registroModal.onclick = (event) => {
             if (event.target === registroModal) {
                 cerrarModalRegistro();
             }
-        });
+        };
     }
 
     registrarListenerOlvidoPassword();
@@ -37,8 +39,8 @@ export function inicializarAuthEvents() {
 async function manejarLogin(e) {
     e.preventDefault();
     const inputEmail = $('loginEmail');
-    const inputPass  = $('loginPassword');
-    
+    const inputPass = $('loginPassword');
+
     const valido = await validarFormularioLogin({
         emailInput: inputEmail,
         passwordInput: inputPass,
@@ -57,12 +59,12 @@ async function manejarLogin(e) {
         guardarRefreshToken(datos.refreshToken);
         guardarSesion(datos.accessToken, datos.user);
 
-        const roles = Array.isArray(datos.user.roles) 
-            ? datos.user.roles.map(r => r.name || r) 
+        const roles = Array.isArray(datos.user.roles)
+            ? datos.user.roles.map(r => r.name || r)
             : [datos.user.role];
-            
+
         const target = roles.includes('admin') ? '/admin' : (roles.includes('instructor') ? '/instructor' : '/usuario');
-        
+
         const pendiente = tomarRutaPendiente();
         navigate(pendiente || target);
     } catch (err) {
@@ -73,24 +75,24 @@ async function manejarLogin(e) {
 async function manejarRegistro(e) {
     e.preventDefault();
 
-    const nombreInput    = $('registroNombre');
-    const docInput       = $('registroDocumento');
-    const emailInput     = $('registroEmail');
-    const passInput      = $('registroPassword');
+    const nombreInput = $('registroNombre');
+    const docInput = $('registroDocumento');
+    const emailInput = $('registroEmail');
+    const passInput = $('registroPassword');
     const confirmarInput = $('registroConfirmar');
 
     // Validar los 5 campos del modal (misma lógica que el backend con Zod)
     const valido = await validarFormularioRegistro({
         nombreInput,
-        nombreError:       $('registroNombreError'),
+        nombreError: $('registroNombreError'),
         docInput,
-        docError:          $('registroDocumentoError'),
+        docError: $('registroDocumentoError'),
         emailInput,
-        emailError:        $('registroEmailError'),
+        emailError: $('registroEmailError'),
         passInput,
-        passError:         $('registroPasswordError'),
+        passError: $('registroPasswordError'),
         confirmarInput,
-        confirmarError:    $('registroConfirmarError'),
+        confirmarError: $('registroConfirmarError'),
     });
 
     if (!valido) return;
@@ -105,10 +107,10 @@ async function manejarRegistro(e) {
 
     try {
         await registrarUsuario({
-            name:      nombreInput.value.trim(),
+            name: nombreInput.value.trim(),
             documento: docInput.value.trim(),
-            email:     emailInput.value.trim(),
-            password:  passInput.value,
+            email: emailInput.value.trim(),
+            password: passInput.value,
         });
 
         // Registro exitoso: cerrar modal y avisar al usuario
@@ -128,7 +130,7 @@ async function manejarRegistro(e) {
 function registrarListenerOlvidoPassword() {
     const btnAbrir = $('btnOlvidoPassword');
     if (!btnAbrir) return;
-    
+
     btnAbrir.addEventListener('click', () => {
         $('olvidoPasswordModal').classList.remove('hidden');
         // Resto de la lógica de pasos 1, 2, 3...
