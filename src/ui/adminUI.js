@@ -1,13 +1,14 @@
 // MÓDULO: ui/adminUI.js
 // EL AYUDANTE DEL JEFE: Maneja las cajitas que se abren y la lista de usuarios.
 
-import { obtenerTodosLosUsuarios, eliminarUsuario } from '../api/usuariosApi.js';
+import { obtenerTodosLosUsuarios, eliminarUsuario, obtenerUsuarioPorId, obtenerRolesDisponibles, obtenerRolesDeUsuario, reemplazarRolesDeUsuario } from '../api/usuariosApi.js';
 import { obtenerTodasLasTareas, obtenerDashboard, eliminarTarea, registrarTarea, obtenerTareasDeUsuario } from '../api/tareasApi.js';
 import { renderizarDashboard, crearFilaTareaAdmin, formatearEstadoTarea } from './tareasUI.js';
 import { mostrarNotificacion, mostrarConfirmacion } from '../utils/notificaciones.js';
 import { filtrarTareas } from '../utils/filtros.js';
 import { ordenarTareas } from '../utils/ordenamiento.js';
 import { obtenerUsuarioId } from '../utils/sesion.js';
+import { ocultarTodo } from './modoUI.js';
 
 const $ = id => document.getElementById(id);
 const limpiarNodo = n => { while (n?.firstChild) n.removeChild(n.firstChild); };
@@ -44,7 +45,7 @@ export async function recargarCheckboxesDropdown() {
     if (!panel || !btn) return;
 
     limpiarNodo(panel);
-    const usuarios = await obtenerTodosLosUsuarios();
+    let usuarios = await obtenerTodosLosUsuarios(); const inputBusqueda = document.getElementById("adminUserDocument"); if (inputBusqueda && inputBusqueda.value.trim() !== "") { const t = inputBusqueda.value.trim().toLowerCase(); usuarios = usuarios.filter(u => u.name.toLowerCase().includes(t) || u.documento.toLowerCase().includes(t) || (u.email && u.email.toLowerCase().includes(t)) || u.id.toString() === t); }
 
     if (!usuarios || usuarios.length === 0) {
         panel.innerHTML = '<p class="usuarios-dropdown__vacio">Nadie registrado</p>';
@@ -73,7 +74,7 @@ export async function recargarCheckboxesDropdown() {
 }
 
 // Prepara el selector de personas
-export function inicializarAdminUI() {
+export function inicializarAdminUI() { const searchForm = document.getElementById("adminSearchUserForm"); if (searchForm) { searchForm.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuarios(); }; }
     const btn = $('usuariosDropdownBtn');
     const panel = $('usuariosDropdownPanel');
     if (!btn || !panel) return;
@@ -112,6 +113,7 @@ export function obtenerIdsSeleccionados() {
 // Prende la pantalla de Administrador
 // Muestra la pantalla de Jefe (Admin) y llena las tablas
 export async function activarModoAdmin() {
+    ocultarTodo();
     document.body.dataset.modo = 'admin';
     $('vistaAdmin').classList.remove('hidden');
     
@@ -138,7 +140,7 @@ async function dibujarTablaUsuarios() {
     if (!tbody) return;
     limpiarNodo(tbody);
 
-    const usuarios = await obtenerTodosLosUsuarios();
+    let usuarios = await obtenerTodosLosUsuarios(); const inputBusqueda = document.getElementById("adminUserDocument"); if (inputBusqueda && inputBusqueda.value.trim() !== "") { const t = inputBusqueda.value.trim().toLowerCase(); usuarios = usuarios.filter(u => u.name.toLowerCase().includes(t) || u.documento.toLowerCase().includes(t) || (u.email && u.email.toLowerCase().includes(t)) || u.id.toString() === t); }
     const miId = obtenerUsuarioId();
 
     usuarios.forEach((u, i) => {
@@ -160,7 +162,7 @@ async function dibujarTablaUsuarios() {
         if (u.id === miId) fila.querySelector('.btn-action--delete').style.display = 'none';
 
         // Configurar botones
-        fila.querySelector(`#ver-${u.id}`).onclick = () => abrirModalAsignar(u);
+        fila.querySelector(`#ver-${u.id}`).onclick = () => abrirModalRoles(u);
         fila.querySelector(`#del-${u.id}`).onclick = async () => {
             if (await mostrarConfirmacion('¿Borrar?', u.name)) {
                 await eliminarUsuario(u.id);
@@ -203,11 +205,136 @@ function aplicarFiltrosAdmin() {
     });
 }
 
-// Abre la ventana mágica para darle tareas a una persona
-async function abrirModalAsignar(usuario) {
-    const tareas = await obtenerTareasDeUsuario(usuario.id);
-    // Aquí abrirías tu modal actual, pero ahora con los datos limpios.
-    // (La lógica del modal es larga pero se mantiene igual que antes)
-    console.log(`Abriendo tareas para ${usuario.name}`, tareas);
-    mostrarNotificacion(`Viendo tareas de ${usuario.name}`, 'info');
+// ── MODAL DE GESTIÓN DE ROLES ─────────────────────────────────────────────
+// Abre el modal #rolesModal del HTML y permite cambiar los roles de un usuario.
+// Carga en paralelo el catálogo de roles y los roles actuales del usuario,
+// renderiza un checkbox por cada rol disponible, y al guardar envía
+// PUT /api/users/:id/roles con el array de roles seleccionados.
+
+// Estado interno del modal (se limpia al cerrar)
+let _rolesModalUserId = null;
+
+function _cerrarModalRoles() {
+    const overlay = $('rolesModal');
+    if (overlay) overlay.classList.add('hidden');
+    _rolesModalUserId = null;
 }
+
+// Abre el modal para un objeto usuario { id, name, ... }
+async function abrirModalRoles(usuario) {
+    _rolesModalUserId = usuario.id;
+
+    const overlay  = $('rolesModal');
+    const titulo   = $('rolesModalTitulo');
+    const loading  = $('rolesModalLoading');
+    const lista    = $('rolesModalLista');
+    const errorEl  = $('rolesModalError');
+    const btnGuardar  = $('rolesModalGuardar');
+    const btnCancelar = $('rolesModalCancelar');
+    const btnClose    = $('rolesModalClose');
+
+    if (!overlay) return;
+
+    // Resetear estado visual
+    titulo.textContent = `Roles de ${usuario.name}`;
+    errorEl.classList.add('hidden');
+    errorEl.textContent = '';
+    loading.classList.remove('hidden');
+    lista.classList.add('hidden');
+    limpiarNodo(lista);
+
+    // Mostrar modal
+    overlay.classList.remove('hidden');
+
+    // Cargar datos en paralelo
+    const [disponibles, actuales] = await Promise.all([
+        obtenerRolesDisponibles(),
+        obtenerRolesDeUsuario(usuario.id)
+    ]);
+
+    // Ocultar loading
+    loading.classList.add('hidden');
+
+    if (!disponibles || disponibles.length === 0) {
+        errorEl.textContent = 'No se pudieron cargar los roles disponibles';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const rolesActuales = new Set(actuales || []);
+
+    // Renderizar checkboxes
+    disponibles.forEach(rolNombre => {
+        const label = document.createElement('label');
+        label.className = 'rolesModal__item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = rolNombre;
+        checkbox.checked = rolesActuales.has(rolNombre);
+
+        const span = document.createElement('span');
+        span.textContent = rolNombre.charAt(0).toUpperCase() + rolNombre.slice(1);
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        lista.appendChild(label);
+    });
+
+    lista.classList.remove('hidden');
+
+    // ── Eventos del modal ────────────────────────────────────────────────
+    // Usamos funciones con nombre para poder removerlas al cerrar
+    const onCerrar = () => {
+        _cerrarModalRoles();
+        btnClose.removeEventListener('click', onCerrar);
+        btnCancelar.removeEventListener('click', onCerrar);
+        btnGuardar.removeEventListener('click', onGuardar);
+    };
+
+    const onGuardar = async () => {
+        const seleccionados = Array.from(lista.querySelectorAll('input:checked'))
+            .map(cb => cb.value);
+
+        if (seleccionados.length === 0) {
+            errorEl.textContent = 'El usuario debe tener al menos un rol';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        errorEl.classList.add('hidden');
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = 'Guardando...';
+
+        const resultado = await reemplazarRolesDeUsuario(usuario.id, seleccionados);
+
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar cambios';
+
+        if (resultado.ok) {
+            mostrarNotificacion(`Roles de ${usuario.name} actualizados correctamente`, 'exito');
+            onCerrar();
+            // Refrescar la tabla para que se vean los nuevos roles
+            dibujarTablaUsuarios();
+        } else {
+            errorEl.textContent = resultado.message || 'Error al actualizar los roles';
+            errorEl.classList.remove('hidden');
+        }
+    };
+
+    btnClose.onclick    = onCerrar;
+    btnCancelar.onclick = onCerrar;
+    btnGuardar.onclick  = onGuardar;
+}
+
+// Versión que recibe solo el ID (usada por el router para deep-linking)
+// Busca el usuario por ID y luego abre el modal
+export async function abrirModalRolesPorId(id) {
+    const usuario = await obtenerUsuarioPorId(id);
+    if (!usuario) {
+        mostrarNotificacion('No se encontró el usuario', 'error');
+        return;
+    }
+    await abrirModalRoles(usuario);
+}
+

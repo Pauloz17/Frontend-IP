@@ -3,12 +3,14 @@ import { obtenerTodosLosUsuarios } from '../api/usuariosApi.js';
 import { renderizarDashboard, crearFilaTareaAdmin } from './tareasUI.js';
 import { mostrarConfirmacion, mostrarNotificacion } from '../utils/notificaciones.js';
 import { recargarCheckboxesDropdown, actualizarTextoDropdown } from './adminUI.js';
+import { ocultarTodo } from './modoUI.js';
 
 const $ = id => document.getElementById(id);
 const limpiar = n => { while (n?.firstChild) n.removeChild(n.firstChild); };
 
 // Muestra la pantalla verde del Instructor
 export async function activarModoInstructor() {
+    ocultarTodo();
     $('vistaInstructor').classList.remove('hidden');
     document.body.dataset.modo = 'instructor';
     
@@ -30,7 +32,7 @@ async function dibujarTablaUsuariosInstr() {
     if (!tbody) return;
     limpiar(tbody);
 
-    const alumnos = await obtenerTodosLosUsuarios();
+    let alumnos = await obtenerTodosLosUsuarios(); const inputBusqueda = document.getElementById("instrUserDocument"); if (inputBusqueda && inputBusqueda.value.trim() !== "") { const t = inputBusqueda.value.trim().toLowerCase(); alumnos = alumnos.filter(u => u.name.toLowerCase().includes(t) || u.documento.toLowerCase().includes(t) || (u.email && u.email.toLowerCase().includes(t)) || u.id.toString() === t); }
     if (!alumnos) return;
 
     alumnos.forEach((alumno, i) => {
@@ -73,7 +75,7 @@ async function cargarListaAlumnosInstr() {
     if (!panel) return;
     limpiar(panel);
 
-    const alumnos = await obtenerTodosLosUsuarios();
+    let alumnos = await obtenerTodosLosUsuarios(); const inputBusqueda = document.getElementById("instrUserDocument"); if (inputBusqueda && inputBusqueda.value.trim() !== "") { const t = inputBusqueda.value.trim().toLowerCase(); alumnos = alumnos.filter(u => u.name.toLowerCase().includes(t) || u.documento.toLowerCase().includes(t) || (u.email && u.email.toLowerCase().includes(t)) || u.id.toString() === t); }
     alumnos.forEach(a => {
         const item = document.createElement('label');
         item.className = 'usuarios-dropdown__opcion';
@@ -84,7 +86,7 @@ async function cargarListaAlumnosInstr() {
 
 // Prepara los botones del instructor
 // Prepara el panel del profesor
-export async function inicializarInstructorUI() {
+export async function inicializarInstructorUI() { const searchFormInstr = document.getElementById("instrSearchUserForm"); if (searchFormInstr) { searchFormInstr.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuariosInstr(); }; }
     const btnMenu = $('instrUsuariosDropdownBtn');
     const panel = $('instrUsuariosDropdownPanel');
     const texto = $('instrUsuariosDropdownTexto');
@@ -112,3 +114,4 @@ export async function inicializarInstructorUI() {
         };
     }
 }
+
