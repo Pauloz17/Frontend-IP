@@ -60,9 +60,6 @@ let criterioOrdenActivo = '';
 // ── FUNCIONES PRIVADAS ────────────────────────────────────────────────────────
 
 // Reinicia completamente el estado del modo usuario y limpia el DOM.
-// Se llama al presionar "Volver" y también antes de una nueva búsqueda.
-// CORRECCIÓN: ahora esta función se usa explícitamente en el botón Volver
-// para garantizar que la vista quede limpia al regresar y volver a entrar.
 function reiniciarVistaModoUsuario() {
     usuarioActual     = null;
     tareasRegistradas = [];
@@ -76,12 +73,6 @@ function reiniciarVistaModoUsuario() {
     if (tbody) {
         while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
     }
-
-    const inputDocumento = document.getElementById('userDocument');
-    if (inputDocumento) inputDocumento.value = '';
-
-    const errorDocumento = document.getElementById('userDocumentError');
-    if (errorDocumento) errorDocumento.textContent = '';
 
     mostrarEstadoVacio();
 }
@@ -284,20 +275,59 @@ function manejarClicEnTabla(event) {
 
 // ── REGISTRO DE LISTENERS (llamado desde main.js) ─────────────────────────────
 
-export function registrarEventListeners() {
+// Filtra en tiempo real las filas de #tasksTableBody según el texto del buscador.
+// Opera sobre los datos en memoria (tareasRegistradas) sin recargar ni hacer fetch.
+function filtrarTablaEnTiempoReal(termino) {
+    const t = termino.trim().toLowerCase();
+    const tbody = document.getElementById('tasksTableBody');
+    if (!tbody) return;
 
-    // Formulario de búsqueda modo usuario
-    const formBusqueda = document.getElementById('searchUserForm');
-    if (formBusqueda) {
-        formBusqueda.addEventListener('submit', manejarBusquedaUsuario);
+    // Si no hay término, mostrar todas las tareas cargadas
+    if (!t) {
+        refrescarTabla();
+        return;
     }
 
-    // Limpiar error mientras el usuario escribe
-    const inputDoc = document.getElementById('userDocument');
-    const errorDoc = document.getElementById('userDocumentError');
-    if (inputDoc && errorDoc) {
-        inputDoc.addEventListener('input', function() {
-            limpiarError(errorDoc, inputDoc);
+    // Filtrar sobre tareasRegistradas directamente en el DOM
+    const tareasFiltradas = tareasRegistradas.filter(function(tarea) {
+        return (
+            String(tarea.id).includes(t) ||
+            (tarea.title       && tarea.title.toLowerCase().includes(t)) ||
+            (tarea.status      && tarea.status.toLowerCase().includes(t)) ||
+            (tarea.description && tarea.description.toLowerCase().includes(t))
+        );
+    });
+
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    if (tareasFiltradas.length === 0) {
+        mostrarEstadoVacio();
+        return;
+    }
+
+    ocultarEstadoVacio();
+    mostrarSeccionTareas();
+    tareasFiltradas.forEach(function(tarea, indice) {
+        agregarTareaATabla(tarea, indice);
+    });
+}
+
+export function registrarEventListeners() {
+
+    // ── Buscador de tareas del panel usuario (lupa) ──────────────────────────
+    // Previene el submit nativo (que recargaría la página y cerraría la sesión).
+    // Filtra en tiempo real las filas ya renderizadas en #tasksTableBody.
+    const formBusquedaTareas = document.getElementById('userSearchTaskForm');
+    const inputBusquedaTareas = document.getElementById('userSearchTaskInput');
+    if (formBusquedaTareas && inputBusquedaTareas) {
+        // Bloquear submit (botón lupa) para que no recargue la página
+        formBusquedaTareas.addEventListener('submit', function(e) {
+            e.preventDefault();
+            filtrarTablaEnTiempoReal(inputBusquedaTareas.value);
+        });
+        // Filtrado en tiempo real al escribir
+        inputBusquedaTareas.addEventListener('input', function() {
+            filtrarTablaEnTiempoReal(inputBusquedaTareas.value);
         });
     }
 
@@ -313,26 +343,6 @@ export function registrarEventListeners() {
 
     const btnCancelarModal = document.getElementById('editCancelBtn');
     if (btnCancelarModal) btnCancelarModal.addEventListener('click', ocultarModalEdicion);
-
-    // CORRECCIÓN: el botón Volver ahora llama explícitamente a reiniciarVistaModoUsuario()
-    // antes de activar la pantalla de inicio. Esto garantiza que al volver a entrar al
-    // modo usuario la búsqueda anterior haya desaparecido completamente.
-    const btnVolver = document.getElementById('btnVolverUsuario');
-    if (btnVolver) {
-        btnVolver.addEventListener('click', function() {
-            reiniciarVistaModoUsuario();
-            // activarModoInicio() lo llama registrarEventosNavegacion() en modoUI.js,
-            // pero como aquí interceptamos el mismo botón necesitamos importar la función.
-            // Para no crear dependencia circular se activa la pantalla de inicio directamente.
-            const pantallaInicio = document.getElementById('pantallaInicio');
-            const vistaUsuario   = document.getElementById('vistaUsuario');
-            const vistaAdmin     = document.getElementById('vistaAdmin');
-            if (pantallaInicio) pantallaInicio.classList.remove('hidden');
-            if (vistaUsuario)   vistaUsuario.classList.add('hidden');
-            if (vistaAdmin)     vistaAdmin.classList.add('hidden');
-            document.body.dataset.modo = 'inicio';
-        });
-    }
 
     // Todos los eventos de navegación y del panel admin
     registrarEventosNavegacion();

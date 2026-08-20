@@ -115,7 +115,7 @@
             </button>
 
             <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--usuario" id="btnPerfilUsuario" type="button" aria-label="Cambiar contraseña">
-                <span class="btn-logout-circular__icono"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+                <span class="btn-logout-circular__icono">👤</span>
             </button>
         </div>
         
@@ -244,7 +244,7 @@
             </button>
             <!-- Agrega debajo del botón de logout del admin -->
             <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--admin" id="btnPerfilAdmin" type="button" aria-label="Cambiar contraseña">
-                <span class="btn-logout-circular__icono"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+                <span class="btn-logout-circular__icono">👤</span>
             </button>
         </div>
         <h1 class="header__title">Panel de Administracion</h1>
@@ -255,7 +255,7 @@
             <p class="header__ip">Servidor IP: <span id="ip-display-admin">Cargando...</span></p>
         </div>
 
-        <form id="adminSearchUserForm" onsubmit="event.preventDefault(); alert('B�squeda en construcci�n');" novalidate class="header__busqueda-admin">
+        <form id="adminSearchUserForm" novalidate class="header__busqueda-admin">
             <input
                 type="text"
                 id="adminUserDocument"
@@ -518,7 +518,7 @@
             </button>
 
             <button class="btn-logout-circular btn-perfil-circular btn-logout-circular--instructor" id="btnPerfilInstructor" type="button" aria-label="Cambiar contraseña">
-                <span class="btn-logout-circular__icono"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+                <span class="btn-logout-circular__icono">👤</span>
             </button>
         </div>
         <h1 class="header__title">Panel Docente</h1>
@@ -529,7 +529,7 @@
             <p class="header__ip">Servidor IP: <span id="ip-display-instr">Cargando...</span></p>
         </div>
 
-        <form id="instrSearchUserForm" onsubmit="event.preventDefault(); alert('B�squeda en construcci�n');" novalidate class="header__busqueda-instructor">
+        <form id="instrSearchUserForm" novalidate class="header__busqueda-instructor">
             <input
                 type="text"
                 id="instrUserDocument"
@@ -641,8 +641,6 @@
                                 <th scope="col">Documento</th>
                                 <th scope="col">Nombre</th>
                                 <th scope="col">Correo</th>
-                                <th scope="col">Roles</th>
-                                <th scope="col">Acciones</th>
                             </tr>
                         </thead>
                         <!-- El tbody lo llena cargarTablaUsuariosInstructor() en modoUI.js -->

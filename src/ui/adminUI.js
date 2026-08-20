@@ -89,6 +89,33 @@ export function inicializarAdminUI() { const searchForm = document.getElementByI
     document.onclick = (e) => {
         if (!panel.contains(e.target) && e.target !== btn) panel.classList.add('hidden');
     };
+
+    const form = $('createTaskForm');
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const IDs = obtenerIdsSeleccionados();
+            
+            const nueva = {
+                title: $('newTaskTitle')?.value,
+                description: $('newTaskDescription')?.value,
+                status: $('newTaskStatus')?.value,
+                comment: $('newTaskComment')?.value,
+                assignedUsers: IDs
+            };
+
+            if (await registrarTarea(nueva)) {
+                import('../utils/notificaciones.js').then(m => m.mostrarNotificacion('¡Tarea creada!', 'exito'));
+                form.reset();
+                const texto = $('usuariosDropdownTexto');
+                if (texto) texto.textContent = 'Seleccionar usuarios...';
+                
+                // Actualizar tablas y panel
+                actualizarDashboardAdmin();
+                cargarTareasAdmin();
+            }
+        };
+    }
 }
 
 // Escribe los nombres de los elegidos en el botón
@@ -152,7 +179,7 @@ async function dibujarTablaUsuarios() {
             <td>${u.email}</td>
             <td>
                 <div class="task-actions">
-                    <button class="btn-action btn-action--edit" id="ver-${u.id}">Ver / Asignar</button>
+                    <button class="btn-action btn-action--edit" id="ver-${u.id}">Asignar Rol</button>
                     <button class="btn-action btn-action--delete" id="del-${u.id}">🗑️ Eliminar</button>
                 </div>
             </td>

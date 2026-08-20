@@ -42,7 +42,6 @@ async function dibujarTablaUsuariosInstr() {
             <td>${alumno.documento}</td>
             <td>${alumno.name}</td>
             <td>${alumno.email}</td>
-            <td><div class="task-actions"><button class="btn-action btn-action--edit">Ver / Asignar</button></div></td>
         `;
         tbody.appendChild(fila);
     });
