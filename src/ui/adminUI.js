@@ -2,8 +2,8 @@
 // EL AYUDANTE DEL JEFE: Maneja las cajitas que se abren y la lista de usuarios.
 
 import { obtenerTodosLosUsuarios, eliminarUsuario, obtenerUsuarioPorId, obtenerRolesDisponibles, obtenerRolesDeUsuario, reemplazarRolesDeUsuario } from '../api/usuariosApi.js';
-import { obtenerTodasLasTareas, obtenerDashboard, eliminarTarea, registrarTarea, obtenerTareasDeUsuario } from '../api/tareasApi.js';
-import { renderizarDashboard, crearFilaTareaAdmin, formatearEstadoTarea } from './tareasUI.js';
+import { obtenerTodasLasTareas, obtenerDashboard, eliminarTarea, registrarTarea, obtenerTareasDeUsuario, actualizarTarea } from '../api/tareasApi.js';
+import { renderizarDashboard, crearFilaTareaAdmin, formatearEstadoTarea, mostrarModalEdicion, ocultarModalEdicion } from './tareasUI.js';
 import { mostrarNotificacion, mostrarConfirmacion } from '../utils/notificaciones.js';
 import { filtrarTareas } from '../utils/filtros.js';
 import { ordenarTareas } from '../utils/ordenamiento.js';
@@ -221,7 +221,7 @@ function aplicarFiltrosAdmin() {
     limpiarNodo(tbody);
     filtradas.forEach((t, i) => {
         tbody.appendChild(crearFilaTareaAdmin(t, i, {
-            onEdit: (tarea) => console.log('Editando tarea...', tarea),
+            onEdit: (tarea) => abrirModalEdicionAdmin(tarea),
             onDelete: async (tarea) => {
                 if (await mostrarConfirmacion('¿Borrar?', tarea.title)) {
                     await eliminarTarea(tarea.id);
