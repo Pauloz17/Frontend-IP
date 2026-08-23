@@ -221,7 +221,7 @@ function aplicarFiltrosAdmin() {
     limpiarNodo(tbody);
     filtradas.forEach((t, i) => {
         tbody.appendChild(crearFilaTareaAdmin(t, i, {
-            onEdit: (tarea) => abrirModalEdicionAdmin(tarea),
+            onEdit: (tarea) => abrirModalEdicionAdmin(tarea, () => cargarTareasAdmin()),
             onDelete: async (tarea) => {
                 if (await mostrarConfirmacion('¿Borrar?', tarea.title)) {
                     await eliminarTarea(tarea.id);
@@ -365,3 +365,33 @@ export async function abrirModalRolesPorId(id) {
     await abrirModalRoles(usuario);
 }
 
+export function abrirModalEdicionAdmin(tarea, callbackExito) {
+    mostrarModalEdicion(tarea, false);
+    const formOriginal = document.getElementById('editTaskForm');
+    const formClonado = formOriginal.cloneNode(true);
+    formOriginal.parentNode.replaceChild(formClonado, formOriginal);
+    
+    const btnCancelar = document.getElementById('editCancelBtn');
+    if (btnCancelar) btnCancelar.addEventListener('click', ocultarModalEdicion);
+    
+    formClonado.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tareaId = document.getElementById('editTaskId').value;
+        const comentEl = document.getElementById('editTaskComment');
+        const datosActualizados = {
+            title: document.getElementById('editTaskTitle').value.trim(),
+            description: document.getElementById('editTaskDescription').value.trim(),
+            status: document.getElementById('editTaskStatus').value,
+            comment: comentEl ? comentEl.value.trim() : '',
+            assignedUsers: tarea.assignedUsers ? tarea.assignedUsers.map(u => typeof u === 'object' ? u.id : u) : []
+        };
+        const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);
+        if (tareaActualizada) {
+            mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
+            ocultarModalEdicion();
+            if (callbackExito) callbackExito();
+        } else {
+            mostrarNotificacion('Error al actualizar la tarea', 'error');
+        }
+    });
+}

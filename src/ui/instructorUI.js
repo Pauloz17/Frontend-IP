@@ -2,7 +2,7 @@ import { obtenerDashboard, obtenerTodasLasTareas, registrarTarea, eliminarTarea 
 import { obtenerTodosLosUsuarios } from '../api/usuariosApi.js';
 import { renderizarDashboard, crearFilaTareaAdmin } from './tareasUI.js';
 import { mostrarConfirmacion, mostrarNotificacion } from '../utils/notificaciones.js';
-import { recargarCheckboxesDropdown, actualizarTextoDropdown } from './adminUI.js';
+import { recargarCheckboxesDropdown, actualizarTextoDropdown, abrirModalEdicionAdmin } from './adminUI.js';
 import { ocultarTodo } from './modoUI.js';
 
 const $ = id => document.getElementById(id);
@@ -56,7 +56,7 @@ async function dibujarTablaTareasInstr() {
     const tareas = await obtenerTodasLasTareas();
     tareas.forEach((t, i) => {
         const fila = crearFilaTareaAdmin(t, i, {
-            onEdit: (t) => console.log('Editando...', t),
+            onEdit: (t) => abrirModalEdicionAdmin(t, () => dibujarTablaTareasInstr()),
             onDelete: async (t) => {
                 if (await mostrarConfirmacion('¿Borrar?', t.title)) {
                     await eliminarTarea(t.id);

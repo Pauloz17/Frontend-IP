@@ -203,6 +203,7 @@ export function manejarEdicionTarea(tarea) {
             description: descripcion,
             status:      estado,
             comment:     comentario,
+            assignedUsers: tarea.assignedUsers ? tarea.assignedUsers.map(u => typeof u === 'object' ? u.id : u) : []
         };
 
         const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);

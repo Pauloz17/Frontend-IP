@@ -129,15 +129,6 @@ export function crearFilaTarea(tarea, indice) {
 
     contenedor.appendChild(btnEditar);
     contenedor.appendChild(btnExportar);
-    const btnEliminar = document.getElementById('btn-eliminar-global');
-if (btnEliminar) {
-    btnEliminar.style.display = hasPermission('tasks.delete.all') ? 'block' : 'none';
-}
-
-const btnCrear = document.getElementById('btn-crear-tarea');
-if (btnCrear) {
-    btnCrear.style.display = hasPermission('tasks.create') ? 'block' : 'none';
-}
     celdaAcciones.appendChild(contenedor);
 
     fila.appendChild(celdaNum);
@@ -265,17 +256,18 @@ export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
     const opcionesAdmin   = selectEstado.querySelectorAll('.opcion-admin');
 
     if (soloLecturaTituloDesc) {
-        // MODO USUARIO: Título y Descripción son de solo lectura
-        // porque editarlos es responsabilidad exclusiva del administrador
+        // MODO USUARIO: Título, Descripción y Estado son de solo lectura
         inputTitulo.setAttribute('readonly', true);
         inputDesc.setAttribute('readonly', true);
+        selectEstado.setAttribute('disabled', true);
         inputTitulo.style.opacity = '0.55';
         inputTitulo.style.cursor  = 'not-allowed';
         inputDesc.style.opacity   = '0.55';
         inputDesc.style.cursor    = 'not-allowed';
+        selectEstado.style.opacity = '0.55';
+        selectEstado.style.cursor = 'not-allowed';
 
-        // MODO USUARIO: se muestran solo las opciones del usuario (En Progreso y Pendiente por aprobar)
-        // Se ocultan las opciones exclusivas del admin (Pendiente y Completada)
+        // MODO USUARIO: se muestran solo las opciones del usuario, aunque no puede cambiarlas
         opcionesUsuario.forEach(function(opt) { opt.style.display = ''; });
         opcionesAdmin.forEach(function(opt) { opt.style.display = 'none'; });
 
@@ -289,13 +281,16 @@ export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
             selectEstado.value = tarea.status;
         }
     } else {
-        // MODO ADMIN: todos los campos son editables
+        // MODO ADMIN/INSTRUCTOR: todos los campos son editables
         inputTitulo.removeAttribute('readonly');
         inputDesc.removeAttribute('readonly');
+        selectEstado.removeAttribute('disabled');
         inputTitulo.style.opacity = '';
         inputTitulo.style.cursor  = '';
         inputDesc.style.opacity   = '';
         inputDesc.style.cursor    = '';
+        selectEstado.style.opacity = '';
+        selectEstado.style.cursor = '';
 
         // MODO ADMIN: se muestran los cuatro estados completos
         opcionesUsuario.forEach(function(opt) { opt.style.display = ''; });
