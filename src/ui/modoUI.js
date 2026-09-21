@@ -4,6 +4,7 @@
 import { obtenerTareasDeUsuario, obtenerDashboard } from '../api/tareasApi.js';
 import { obtenerUsuarioSesion, cerrarSesion, obtenerUsuarioId } from '../utils/sesion.js';
 import { agregarTareaATabla, renderizarDashboard } from './tareasUI.js';
+import { establecerTareasRegistradas } from '../services/tareasService.js';
 import { inicializarAuthEvents, limpiarFormularioLogin, abrirModalRegistro } from './authUI.js';
 import { activarModoAdmin, inicializarAdminUI, registrarCardsContraibles, abrirModalRolesPorId } from './adminUI.js';
 import { activarModoInstructor, inicializarInstructorUI } from './instructorUI.js';
@@ -23,9 +24,8 @@ export function ocultarTodo() {
         if (el) el.classList.add('hidden');
     });
 }
+
 // Cambia la dirección que ves arriba en el navegador
-// El router es el dueño de la URL. Esta función solo conserva compatibilidad
-// con llamadas directas sin volver a usar rutas de servidor.
 const _actualizarPath = p => {
     if (window.location.hash !== `#${p}`) {
         window.history.replaceState({}, '', `#${p}`);
@@ -56,6 +56,7 @@ export async function activarModoUsuario() {
 
     // Busca tus tareas y las pone en la tabla
     const tareas = await obtenerTareasDeUsuario(user.id);
+    establecerTareasRegistradas(tareas);
     const tbody = $('tasksTableBody');
     while(tbody.firstChild) tbody.removeChild(tbody.firstChild);
     
@@ -113,14 +114,10 @@ async function manejarCerrarSesion() {
 }
 
 // ── HALLAZGO #5: Obtener IP del servidor y nombre del usuario ────────────────
-// Llama a GET /api/system/network-ip y llena los spans ip-display (y variantes)
-// y los p welcome-msg (y variantes) con la IP y el nombre del usuario en sesión.
 async function _cargarDatosDeSistema() {
-    // Nombre del usuario desde la sesión (no requiere fetch extra)
     const user = obtenerUsuarioSesion();
     const nombreUsuario = user ? user.name : '';
 
-    // Actualizar los mensajes de bienvenida en los 3 paneles
     [
         ['welcome-msg',       nombreUsuario],
         ['welcome-msg-admin', nombreUsuario],
@@ -130,12 +127,10 @@ async function _cargarDatosDeSistema() {
         if (el && texto) el.textContent = `Bienvenido, ${texto}`;
     });
 
-    // Consultar the endpoint de IP del servidor
     try {
         const url = `${API_BASE_URL}${API_PREFIX}/system/network-ip`;
         const res = await fetchConAuth(url, { cache: 'no-store' });
         const json = await res.json();
-        // El backend devuelve { data: { ip: '...' } } o { ip: '...' }
         const ip = (json.data && json.data.ip) || json.ip || 'No disponible';
 
         ['ip-display', 'ip-display-admin', 'ip-display-instr'].forEach(id => {
@@ -152,8 +147,6 @@ async function _cargarDatosDeSistema() {
 }
 
 // ── MODAL DE CAMBIO DE CONTRASEÑA ────────────────────────────────────
-// Abre el modal #cambioPasswordModal. Lo usa el botón de perfil (persona)
-// y también el router cuando la URL es /admin/cambiar-password (etc.)
 export function abrirModalPassword() {
     const modal = $('cambioPasswordModal');
     if (!modal) return;
@@ -162,7 +155,6 @@ export function abrirModalPassword() {
 
     const cerrarModal = () => {
         modal.classList.add('hidden');
-        // Limpiar el formulario y mensajes de error al cerrar
         ['passwordActual', 'passwordNueva', 'passwordConfirmar'].forEach(id => {
             const el = $(id);
             if (el) el.value = '';
@@ -171,7 +163,6 @@ export function abrirModalPassword() {
             const el = $(id);
             if (el) el.textContent = '';
         });
-        // Limpiar listener del formulario
         const form = $('cambioPasswordForm');
         if (form) form.removeEventListener('submit', _manejarCambioPassword);
     };
@@ -182,16 +173,13 @@ export function abrirModalPassword() {
     if (btnClose)    btnClose.onclick    = cerrarModal;
     if (btnCancelar) btnCancelar.onclick = cerrarModal;
 
-    // ── HALLAZGO #3: Conectar el formulario a cambiarPassword() ───────────
     const form = $('cambioPasswordForm');
     if (form) {
-        // Remover listener anterior para evitar duplicados (si el modal se abre varias veces)
         form.removeEventListener('submit', _manejarCambioPassword);
         form.addEventListener('submit', _manejarCambioPassword);
     }
 }
 
-// Handler del submit de cambio de contraseña — función con nombre para poder removerse
 async function _manejarCambioPassword(e) {
     e.preventDefault();
 
@@ -202,7 +190,6 @@ async function _manejarCambioPassword(e) {
     const errorNueva     = document.getElementById('passwordNuevaError');
     const errorConfirmar = document.getElementById('passwordConfirmarError');
 
-    // Limpiar errores previos
     [errorActual, errorNueva, errorConfirmar].forEach(el => { if (el) el.textContent = ''; });
 
     let hayError = false;
@@ -225,7 +212,6 @@ async function _manejarCambioPassword(e) {
 
     if (hayError) return;
 
-    // Obtener el ID del usuario logueado
     const userId = obtenerUsuarioId();
     if (!userId) {
         mostrarNotificacion('No hay usuario en sesión', 'error');
@@ -245,7 +231,6 @@ async function _manejarCambioPassword(e) {
 
     if (resultado === true) {
         await mostrarNotificacion('Contraseña cambiada exitosamente', 'exito');
-        // Cerrar el modal tras el éxito
         const modal = document.getElementById('cambioPasswordModal');
         if (modal) modal.classList.add('hidden');
         e.target.reset();
@@ -255,5 +240,4 @@ async function _manejarCambioPassword(e) {
     }
 }
 
-// Re-export para que el router pueda acceder vía import dinámico de modoUI
 export { abrirModalRolesPorId };

@@ -79,8 +79,9 @@ export function formatearEstadoTarea(estado) {
 // Esto mejora la experiencia del usuario en el panel de usuario, donde la
 // eliminación de tareas es responsabilidad exclusiva del administrador.
 export function crearFilaTarea(tarea, indice) {
+    const taskId = (tarea.id !== undefined && tarea.id !== null) ? tarea.id : (tarea._id !== undefined ? tarea._id : '');
     const fila = document.createElement('tr');
-    fila.dataset.id = tarea.id;
+    fila.dataset.id = taskId;
 
     // # correlativo
     const celdaNum = document.createElement('td');
@@ -113,10 +114,10 @@ export function crearFilaTarea(tarea, indice) {
 
     // Botón Editar tarea — abre el modal de edición con los datos de esta tarea
     const btnEditar = document.createElement('button');
-    btnEditar.textContent    = '✏️ Editar';
+    btnEditar.textContent    = '\u{1F4CB} Actualizar Avance';
     btnEditar.classList.add('btn-action', 'btn-action--edit');
     btnEditar.type           = 'button';
-    btnEditar.dataset.id     = tarea.id;
+    btnEditar.dataset.id     = taskId;
     btnEditar.dataset.action = 'edit';
 
     // Botón Exportar JSON — descarga esta tarea como archivo .json individual
@@ -124,7 +125,7 @@ export function crearFilaTarea(tarea, indice) {
     btnExportar.textContent    = '⬇️ Exportar';
     btnExportar.classList.add('btn-action', 'btn-action--export');
     btnExportar.type           = 'button';
-    btnExportar.dataset.id     = tarea.id;
+    btnExportar.dataset.id     = taskId;
     btnExportar.dataset.action = 'export';
 
     contenedor.appendChild(btnEditar);
@@ -236,14 +237,20 @@ export function eliminarFilaTarea(tareaId) {
 //   false → panel admin: todos los campos son editables y el select
 //            muestra las tres opciones incluyendo "Completada"
 export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
+    const taskId = (tarea.id !== undefined && tarea.id !== null) ? tarea.id : (tarea._id !== undefined ? tarea._id : '');
     // Se cargan los valores actuales de la tarea en los campos del formulario
-    document.getElementById('editTaskId').value          = tarea.id;
-    document.getElementById('editTaskTitle').value       = tarea.title;
+    document.getElementById('editTaskId').value          = taskId;
+    document.getElementById('editTaskTitle').value       = tarea.title || '';
     document.getElementById('editTaskDescription').value = tarea.description || '';
-    document.getElementById('editTaskStatus').value      = tarea.status;
+    document.getElementById('editTaskStatus').value      = tarea.status || 'en_progreso';
 
     const comentEl = document.getElementById('editTaskComment');
     if (comentEl) comentEl.value = tarea.comment || '';
+
+    const modalTitle = document.querySelector('#editModal .modal__title');
+    if (modalTitle) {
+        modalTitle.textContent = soloLecturaTituloDesc ? 'Actualizar Avance' : 'Editar Tarea';
+    }
 
     const inputTitulo = document.getElementById('editTaskTitle');
     const inputDesc   = document.getElementById('editTaskDescription');
@@ -256,18 +263,18 @@ export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
     const opcionesAdmin   = selectEstado.querySelectorAll('.opcion-admin');
 
     if (soloLecturaTituloDesc) {
-        // MODO USUARIO: Título, Descripción y Estado son de solo lectura
+        // MODO USUARIO: Titulo y Descripcion son de solo lectura
         inputTitulo.setAttribute('readonly', true);
         inputDesc.setAttribute('readonly', true);
-        selectEstado.setAttribute('disabled', true);
+        selectEstado.removeAttribute('disabled');
         inputTitulo.style.opacity = '0.55';
         inputTitulo.style.cursor  = 'not-allowed';
         inputDesc.style.opacity   = '0.55';
         inputDesc.style.cursor    = 'not-allowed';
-        selectEstado.style.opacity = '0.55';
-        selectEstado.style.cursor = 'not-allowed';
+        selectEstado.style.opacity = '';
+        selectEstado.style.cursor = '';
 
-        // MODO USUARIO: se muestran solo las opciones del usuario, aunque no puede cambiarlas
+        // MODO USUARIO: se muestran solo las opciones del usuario para que pueda cambiar el estado
         opcionesUsuario.forEach(function(opt) { opt.style.display = ''; });
         opcionesAdmin.forEach(function(opt) { opt.style.display = 'none'; });
 

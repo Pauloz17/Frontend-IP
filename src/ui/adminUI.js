@@ -5,6 +5,7 @@ import { obtenerTodosLosUsuarios, eliminarUsuario, obtenerUsuarioPorId, obtenerR
 import { obtenerTodasLasTareas, obtenerDashboard, eliminarTarea, registrarTarea, obtenerTareasDeUsuario, actualizarTarea } from '../api/tareasApi.js';
 import { renderizarDashboard, crearFilaTareaAdmin, formatearEstadoTarea, mostrarModalEdicion, ocultarModalEdicion } from './tareasUI.js';
 import { mostrarNotificacion, mostrarConfirmacion } from '../utils/notificaciones.js';
+import { validarFormularioTarea } from '../utils/validaciones.js';
 import { filtrarTareas } from '../utils/filtros.js';
 import { ordenarTareas } from '../utils/ordenamiento.js';
 import { obtenerUsuarioId } from '../utils/sesion.js';
@@ -74,7 +75,8 @@ export async function recargarCheckboxesDropdown() {
 }
 
 // Prepara el selector de personas
-export function inicializarAdminUI() { const searchForm = document.getElementById("adminSearchUserForm"); if (searchForm) { searchForm.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuarios(); }; }
+export function inicializarAdminUI() {
+    const searchForm = document.getElementById("adminSearchUserForm"); if (searchForm) { searchForm.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuarios(); }; }
     const btn = $('usuariosDropdownBtn');
     const panel = $('usuariosDropdownPanel');
     if (!btn || !panel) return;
@@ -94,8 +96,16 @@ export function inicializarAdminUI() { const searchForm = document.getElementByI
     if (form) {
         form.onsubmit = async (e) => {
             e.preventDefault();
+            const esValido = await validarFormularioTarea({
+                titleInput: $('newTaskTitle'),
+                statusInput: $('newTaskStatus'),
+                titleError: $('newTaskTitleError'),
+                statusError: $('newTaskStatusError')
+            });
+            if (!esValido) return;
+
             const IDs = obtenerIdsSeleccionados();
-            
+
             const nueva = {
                 title: $('newTaskTitle')?.value,
                 description: $('newTaskDescription')?.value,
@@ -104,15 +114,20 @@ export function inicializarAdminUI() { const searchForm = document.getElementByI
                 assignedUsers: IDs
             };
 
-            if (await registrarTarea(nueva)) {
-                import('../utils/notificaciones.js').then(m => m.mostrarNotificacion('¡Tarea creada!', 'exito'));
-                form.reset();
-                const texto = $('usuariosDropdownTexto');
-                if (texto) texto.textContent = 'Seleccionar usuarios...';
-                
-                // Actualizar tablas y panel
-                actualizarDashboardAdmin();
-                cargarTareasAdmin();
+            try {
+                const resultado = await registrarTarea(nueva);
+                if (resultado) {
+                    mostrarNotificacion('Tarea creada exitosamente', 'exito');
+                    form.reset();
+                    const texto = $('usuariosDropdownTexto');
+                    if (texto) texto.textContent = 'Seleccionar usuarios...';
+
+                    // Actualizar tablas y panel
+                    actualizarDashboardAdmin();
+                    cargarTareasAdmin();
+                }
+            } catch (error) {
+                mostrarNotificacion(error.message || 'Error al crear la tarea', 'error');
             }
         };
     }
@@ -127,8 +142,8 @@ export function actualizarTextoDropdown(btn, texto, panel) {
     }
 
     const nombres = marcados.map(cb => cb.closest('label').querySelector('.usuarios-dropdown__nombre').textContent);
-    texto.textContent = nombres.length <= 2 
-        ? nombres.join(', ') 
+    texto.textContent = nombres.length <= 2
+        ? nombres.join(', ')
         : `${nombres.slice(0, 2).join(', ')} y ${nombres.length - 2} más`;
 }
 
@@ -143,7 +158,7 @@ export async function activarModoAdmin() {
     ocultarTodo();
     document.body.dataset.modo = 'admin';
     $('vistaAdmin').classList.remove('hidden');
-    
+
     // Cargamos todo al mismo tiempo para que sea rápido
     actualizarDashboardAdmin();
     dibujarTablaUsuarios();
@@ -184,7 +199,7 @@ async function dibujarTablaUsuarios() {
                 </div>
             </td>
         `;
-        
+
         // Si soy yo mismo, no me dejo borrar
         if (u.id === miId) fila.querySelector('.btn-action--delete').style.display = 'none';
 
@@ -251,14 +266,14 @@ function _cerrarModalRoles() {
 async function abrirModalRoles(usuario) {
     _rolesModalUserId = usuario.id;
 
-    const overlay  = $('rolesModal');
-    const titulo   = $('rolesModalTitulo');
-    const loading  = $('rolesModalLoading');
-    const lista    = $('rolesModalLista');
-    const errorEl  = $('rolesModalError');
-    const btnGuardar  = $('rolesModalGuardar');
+    const overlay = $('rolesModal');
+    const titulo = $('rolesModalTitulo');
+    const loading = $('rolesModalLoading');
+    const lista = $('rolesModalLista');
+    const errorEl = $('rolesModalError');
+    const btnGuardar = $('rolesModalGuardar');
     const btnCancelar = $('rolesModalCancelar');
-    const btnClose    = $('rolesModalClose');
+    const btnClose = $('rolesModalClose');
 
     if (!overlay) return;
 
@@ -349,9 +364,9 @@ async function abrirModalRoles(usuario) {
         }
     };
 
-    btnClose.onclick    = onCerrar;
+    btnClose.onclick = onCerrar;
     btnCancelar.onclick = onCerrar;
-    btnGuardar.onclick  = onGuardar;
+    btnGuardar.onclick = onGuardar;
 }
 
 // Versión que recibe solo el ID (usada por el router para deep-linking)
@@ -370,10 +385,10 @@ export function abrirModalEdicionAdmin(tarea, callbackExito) {
     const formOriginal = document.getElementById('editTaskForm');
     const formClonado = formOriginal.cloneNode(true);
     formOriginal.parentNode.replaceChild(formClonado, formOriginal);
-    
+
     const btnCancelar = document.getElementById('editCancelBtn');
     if (btnCancelar) btnCancelar.addEventListener('click', ocultarModalEdicion);
-    
+
     formClonado.addEventListener('submit', async (e) => {
         e.preventDefault();
         const tareaId = document.getElementById('editTaskId').value;

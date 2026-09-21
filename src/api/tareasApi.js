@@ -125,11 +125,15 @@ export async function actualizarTarea(tareaId, datosTarea) {
             body: JSON.stringify(datosTarea),
         });
         const json = await response.json();
-        if (!response.ok) throw new Error(json.message || `Error al actualizar tarea ${tareaId}`);
-        return json.data;
+        if (!response.ok) {
+            const detalles = extraerDetallesValidacion(json);
+            const base = json.message || `Error al actualizar tarea ${tareaId}`;
+            throw new Error(detalles ? `${base}: ${detalles}` : base);
+        }
+        return json.data !== undefined ? json.data : (json.task !== undefined ? json.task : json);
     } catch (error) {
         console.error('actualizarTarea:', error);
-        return null;
+        throw error;
     }
 }
 

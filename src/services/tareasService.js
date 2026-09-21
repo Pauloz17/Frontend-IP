@@ -42,26 +42,29 @@ import {
 // El mismo utilitario acepta un arreglo, así que se le pasa [tarea]
 import { exportarTareasJSON } from '../utils/exportacion.js';
 
-import { filtrarTareas }  from '../utils/filtros.js';
-import { ordenarTareas }  from '../utils/ordenamiento.js';
+import { filtrarTareas } from '../utils/filtros.js';
+import { ordenarTareas } from '../utils/ordenamiento.js';
 import { registrarEventosNavegacion, activarModoInicio } from '../ui/modoUI.js';
 
 // ── ESTADO LOCAL (modo usuario) ───────────────────────────────────────────────
 
-let usuarioActual     = null;
+let usuarioActual = null;
 let tareasRegistradas = [];
 
-// Filtros activos en el modo usuario (no hay controles en el HTML actual,
-// pero la infraestructura queda lista para agregarlos)
-let filtroEstadoActivo  = '';
+// Filtros activos en el modo usuario
+let filtroEstadoActivo = '';
 let filtroUsuarioActivo = '';
 let criterioOrdenActivo = '';
+
+export function establecerTareasRegistradas(tareas) {
+    tareasRegistradas = tareas || [];
+}
 
 // ── FUNCIONES PRIVADAS ────────────────────────────────────────────────────────
 
 // Reinicia completamente el estado del modo usuario y limpia el DOM.
 function reiniciarVistaModoUsuario() {
-    usuarioActual     = null;
+    usuarioActual = null;
     tareasRegistradas = [];
 
     ocultarDatosUsuario();
@@ -93,7 +96,7 @@ function refrescarTabla() {
     ocultarEstadoVacio();
     mostrarSeccionTareas();
 
-    tareasOrdenadas.forEach(function(tarea, indice) {
+    tareasOrdenadas.forEach(function (tarea, indice) {
         agregarTareaATabla(tarea, indice);
     });
 }
@@ -131,7 +134,7 @@ export async function manejarBusquedaUsuario(event) {
 
     let tareas = [];
     try {
-        tareas            = await obtenerTareasDeUsuario(usuario.id);
+        tareas = await obtenerTareasDeUsuario(usuario.id);
         tareasRegistradas = tareas;
     } catch (err) {
         console.error('Error cargando tareas del usuario:', err);
@@ -146,13 +149,13 @@ function mostrarResultadoUsuarioFijo(usuario, tareas) {
     const seccionDatos = document.getElementById('userDataSection');
     if (seccionDatos) seccionDatos.classList.remove('hidden');
 
-    const spanId     = document.getElementById('userId');
+    const spanId = document.getElementById('userId');
     const spanNombre = document.getElementById('userName');
-    const spanEmail  = document.getElementById('userEmail');
+    const spanEmail = document.getElementById('userEmail');
 
-    if (spanId)     spanId.textContent     = usuario.documento || usuario.id;
+    if (spanId) spanId.textContent = usuario.documento || usuario.id;
     if (spanNombre) spanNombre.textContent = usuario.name;
-    if (spanEmail)  spanEmail.textContent  = usuario.email;
+    if (spanEmail) spanEmail.textContent = usuario.email;
 
     // Mostrar sección de tareas
     const seccionTareas = document.getElementById('tasksSection');
@@ -175,7 +178,7 @@ function mostrarResultadoUsuarioFijo(usuario, tareas) {
     const estadoVacio = document.getElementById('tasksEmptyState');
     if (estadoVacio) estadoVacio.classList.add('hidden');
 
-    tareas.forEach(function(tarea, indice) {
+    tareas.forEach(function (tarea, indice) {
         agregarTareaATabla(tarea, indice);
     });
 }
@@ -187,52 +190,63 @@ export function manejarEdicionTarea(tarea) {
     mostrarModalEdicion(tarea, true);
 
     const formulario = document.getElementById('editTaskForm');
+    if (!formulario) return;
 
-    async function manejarGuardadoEdicion(event) {
+    formulario.onsubmit = async function (event) {
         event.preventDefault();
 
-        const titulo      = document.getElementById('editTaskTitle').value.trim();
+        const titulo = document.getElementById('editTaskTitle').value.trim();
         const descripcion = document.getElementById('editTaskDescription').value.trim();
-        const estado      = document.getElementById('editTaskStatus').value;
-        const tareaId     = document.getElementById('editTaskId').value;
-        const comentEl    = document.getElementById('editTaskComment');
-        const comentario  = comentEl ? comentEl.value.trim() : '';
+        const estado = document.getElementById('editTaskStatus').value;
+        const tareaId = document.getElementById('editTaskId').value;
+        const comentEl = document.getElementById('editTaskComment');
+        const comentario = comentEl ? comentEl.value.trim() : '';
+
+        const idsUsuarios = Array.isArray(tarea.assignedUsers)
+            ? tarea.assignedUsers.map(u => typeof u === 'object' ? (u.id !== undefined ? u.id : u._id) : u)
+            : [];
 
         const datosActualizados = {
-            title:       titulo,
+            title: titulo || tarea.title,
             description: descripcion,
-            status:      estado,
-            comment:     comentario,
-            assignedUsers: tarea.assignedUsers ? tarea.assignedUsers.map(u => typeof u === 'object' ? u.id : u) : []
+            status: estado,
+            comment: comentario,
+            assignedUsers: idsUsuarios
         };
 
-        const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);
+        const btnSubmit = formulario.querySelector('button[type="submit"]');
+        const textoOriginal = btnSubmit ? btnSubmit.textContent : 'Guardar';
+        if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Guardando...'; }
 
-        if (tareaActualizada) {
-            const indice = tareasRegistradas.findIndex(
-                t => t.id.toString() === tareaActualizada.id.toString()
-            );
+        try {
+            const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);
 
-            if (indice !== -1) {
-                // El backend devuelve el comment correctamente; se guarda el local
-                // como respaldo por si el backend aún no lo incluye en la respuesta
-                tareasRegistradas[indice] = {
-                    ...tareaActualizada,
-                    comment: comentario,
-                };
+            if (tareaActualizada) {
+                const idBuscado = (tarea.id !== undefined && tarea.id !== null) ? tarea.id : tarea._id;
+                const indice = tareasRegistradas.findIndex(
+                    t => String(t.id !== undefined && t.id !== null ? t.id : t._id) === String(idBuscado)
+                );
+
+                if (indice !== -1) {
+                    tareasRegistradas[indice] = {
+                        ...tareasRegistradas[indice],
+                        ...tareaActualizada,
+                        status: estado,
+                        comment: comentario,
+                    };
+                }
+
+                refrescarTabla();
+                ocultarModalEdicion();
+                await mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
             }
-
-            refrescarTabla();
-            ocultarModalEdicion();
-            await mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
-        } else {
-            await mostrarNotificacion('Error al actualizar la tarea', 'error');
+        } catch (error) {
+            console.error('Error al actualizar tarea:', error);
+            await mostrarNotificacion(error.message || 'Error al actualizar la tarea', 'error');
+        } finally {
+            if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = textoOriginal; }
         }
-
-        formulario.removeEventListener('submit', manejarGuardadoEdicion);
-    }
-
-    formulario.addEventListener('submit', manejarGuardadoEdicion);
+    };
 }
 
 // ── RF-04: EXPORTAR TAREA INDIVIDUAL COMO JSON ───────────────────────────────
@@ -255,20 +269,27 @@ export async function manejarExportacionTarea(tarea) {
 // ── DELEGACIÓN DE EVENTOS EN LA TABLA ────────────────────────────────────────
 
 // Manejador delegado: escucha todos los clics del tbody y despacha según data-action.
-// Se eliminó el caso 'delete' — el usuario no puede eliminar sus propias tareas.
-// Se agregó el caso 'export' para la nueva acción de exportación individual.
 function manejarClicEnTabla(event) {
     const botonAccion = event.target.closest('[data-action]');
     if (!botonAccion) return;
 
     const tareaId = botonAccion.dataset.id;
-    const accion  = botonAccion.dataset.action;
+    const accion = botonAccion.dataset.action;
 
-    const tarea = tareasRegistradas.find(t => t.id.toString() === tareaId.toString());
-    if (!tarea) return;
+    if (!tareaId || tareaId === 'undefined') return;
+
+    const tarea = tareasRegistradas.find(t => {
+        const id = (t.id !== undefined && t.id !== null) ? t.id : t._id;
+        return String(id) === String(tareaId);
+    });
+
+    if (!tarea) {
+        console.warn(`Tarea con ID ${tareaId} no encontrada en el arreglo local`);
+        return;
+    }
 
     // Editar: abre el modal con los datos actuales de la tarea
-    if (accion === 'edit')   manejarEdicionTarea(tarea);
+    if (accion === 'edit') manejarEdicionTarea(tarea);
 
     // Exportar: descarga esta tarea individual como archivo .json
     if (accion === 'export') manejarExportacionTarea(tarea);
@@ -290,11 +311,11 @@ function filtrarTablaEnTiempoReal(termino) {
     }
 
     // Filtrar sobre tareasRegistradas directamente en el DOM
-    const tareasFiltradas = tareasRegistradas.filter(function(tarea) {
+    const tareasFiltradas = tareasRegistradas.filter(function (tarea) {
         return (
             String(tarea.id).includes(t) ||
-            (tarea.title       && tarea.title.toLowerCase().includes(t)) ||
-            (tarea.status      && tarea.status.toLowerCase().includes(t)) ||
+            (tarea.title && tarea.title.toLowerCase().includes(t)) ||
+            (tarea.status && tarea.status.toLowerCase().includes(t)) ||
             (tarea.description && tarea.description.toLowerCase().includes(t))
         );
     });
@@ -308,12 +329,21 @@ function filtrarTablaEnTiempoReal(termino) {
 
     ocultarEstadoVacio();
     mostrarSeccionTareas();
-    tareasFiltradas.forEach(function(tarea, indice) {
+    tareasFiltradas.forEach(function (tarea, indice) {
         agregarTareaATabla(tarea, indice);
     });
 }
 
 export function registrarEventListeners() {
+
+    // Filtra las tareas cargadas al cambiar el estado seleccionado.
+    const filtroEstadoUsuario = document.getElementById('filtroEstadoUsuario');
+    if (filtroEstadoUsuario) {
+        filtroEstadoUsuario.addEventListener('change', function () {
+            filtroEstadoActivo = filtroEstadoUsuario.value;
+            refrescarTabla();
+        });
+    }
 
     // ── Buscador de tareas del panel usuario (lupa) ──────────────────────────
     // Previene el submit nativo (que recargaría la página y cerraría la sesión).
@@ -322,12 +352,12 @@ export function registrarEventListeners() {
     const inputBusquedaTareas = document.getElementById('userSearchTaskInput');
     if (formBusquedaTareas && inputBusquedaTareas) {
         // Bloquear submit (botón lupa) para que no recargue la página
-        formBusquedaTareas.addEventListener('submit', function(e) {
+        formBusquedaTareas.addEventListener('submit', function (e) {
             e.preventDefault();
             filtrarTablaEnTiempoReal(inputBusquedaTareas.value);
         });
         // Filtrado en tiempo real al escribir
-        inputBusquedaTareas.addEventListener('input', function() {
+        inputBusquedaTareas.addEventListener('input', function () {
             filtrarTablaEnTiempoReal(inputBusquedaTareas.value);
         });
     }

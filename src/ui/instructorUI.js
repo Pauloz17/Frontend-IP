@@ -2,6 +2,7 @@ import { obtenerDashboard, obtenerTodasLasTareas, registrarTarea, eliminarTarea 
 import { obtenerTodosLosUsuarios } from '../api/usuariosApi.js';
 import { renderizarDashboard, crearFilaTareaAdmin } from './tareasUI.js';
 import { mostrarConfirmacion, mostrarNotificacion } from '../utils/notificaciones.js';
+import { validarFormularioTarea } from '../utils/validaciones.js';
 import { recargarCheckboxesDropdown, actualizarTextoDropdown, abrirModalEdicionAdmin } from './adminUI.js';
 import { ocultarTodo } from './modoUI.js';
 
@@ -13,7 +14,7 @@ export async function activarModoInstructor() {
     ocultarTodo();
     $('vistaInstructor').classList.remove('hidden');
     document.body.dataset.modo = 'instructor';
-    
+
     actualizarNumeritosInstr();
     dibujarTablaUsuariosInstr();
     dibujarTablaTareasInstr();
@@ -85,7 +86,8 @@ async function cargarListaAlumnosInstr() {
 
 // Prepara los botones del instructor
 // Prepara el panel del profesor
-export async function inicializarInstructorUI() { const searchFormInstr = document.getElementById("instrSearchUserForm"); if (searchFormInstr) { searchFormInstr.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuariosInstr(); }; }
+export async function inicializarInstructorUI() {
+    const searchFormInstr = document.getElementById("instrSearchUserForm"); if (searchFormInstr) { searchFormInstr.onsubmit = (e) => { e.preventDefault(); dibujarTablaUsuariosInstr(); }; }
     const btnMenu = $('instrUsuariosDropdownBtn');
     const panel = $('instrUsuariosDropdownPanel');
     const texto = $('instrUsuariosDropdownTexto');
@@ -96,19 +98,34 @@ export async function inicializarInstructorUI() { const searchFormInstr = docume
     if (form) {
         form.onsubmit = async (e) => {
             e.preventDefault();
+            const esValido = await validarFormularioTarea({
+                titleInput: $('instrNewTaskTitle'),
+                statusInput: $('instrNewTaskStatus'),
+                titleError: $('instrNewTaskTitleError'),
+                statusError: $('instrNewTaskStatusError')
+            });
+            if (!esValido) return;
+
             const IDs = Array.from(panel.querySelectorAll('input:checked')).map(i => i.value);
-            
+
             const nueva = {
                 title: $('instrNewTaskTitle').value,
+                description: $('instrNewTaskDescription').value,
                 status: $('instrNewTaskStatus').value,
+                comment: $('instrNewTaskComment').value,
                 assignedUsers: IDs
             };
 
-            if (await registrarTarea(nueva)) {
-                mostrarNotificacion('¡Tarea creada!', 'exito');
-                form.reset();
-                dibujarTablaTareasInstr();
-                actualizarNumeritosInstr();
+            try {
+                const resultado = await registrarTarea(nueva);
+                if (resultado) {
+                    mostrarNotificacion('¡Tarea creada!', 'exito');
+                    form.reset();
+                    dibujarTablaTareasInstr();
+                    actualizarNumeritosInstr();
+                }
+            } catch (error) {
+                mostrarNotificacion(error.message || 'Error al crear la tarea', 'error');
             }
         };
     }
