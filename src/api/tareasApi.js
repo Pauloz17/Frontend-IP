@@ -130,7 +130,7 @@ export async function actualizarTarea(tareaId, datosTarea) {
             const base = json.message || `Error al actualizar tarea ${tareaId}`;
             throw new Error(detalles ? `${base}: ${detalles}` : base);
         }
-        return json.data !== undefined ? json.data : (json.task !== undefined ? json.task : json);
+        return json.data;
     } catch (error) {
         console.error('actualizarTarea:', error);
         throw error;
@@ -139,21 +139,21 @@ export async function actualizarTarea(tareaId, datosTarea) {
 
 // ── CAMBIAR SOLO EL ESTADO ────────────────────────────────────────────────────
 // PATCH /api/tasks/:id/status
-// Cuerpo: { status: 'pendiente' | 'en_progreso' | 'completada' }
-export async function cambiarEstadoTarea(tareaId, status) {
+// Cuerpo: { status, comment }
+export async function cambiarEstadoTarea(tareaId, status, comment = '') {
     try {
         const url = `${API_BASE_URL}${API_PREFIX}/tasks/${tareaId}/status`;
         const response = await fetchConAuth(url, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
+            body: JSON.stringify({ status, comment: comment ?? '' }),
         });
         const json = await response.json();
         if (!response.ok) throw new Error(json.message || `Error al cambiar estado de tarea ${tareaId}`);
-        return json.data;
+        return json.data !== undefined ? json.data : (json.task !== undefined ? json.task : json);
     } catch (error) {
         console.error('cambiarEstadoTarea:', error);
-        return null;
+        throw error;
     }
 }
 

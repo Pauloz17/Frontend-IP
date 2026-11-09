@@ -273,6 +273,10 @@ export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
         inputDesc.style.cursor    = 'not-allowed';
         selectEstado.style.opacity = '';
         selectEstado.style.cursor = '';
+        if (comentEl) {
+            comentEl.hidden = false;
+            comentEl.removeAttribute('disabled');
+        }
 
         // MODO USUARIO: se muestran solo las opciones del usuario para que pueda cambiar el estado
         opcionesUsuario.forEach(function(opt) { opt.style.display = ''; });
@@ -281,12 +285,8 @@ export function mostrarModalEdicion(tarea, soloLecturaTituloDesc = false) {
         // Si la tarea tiene un estado que no está en el select del usuario,
         // se fuerza a "en_progreso" para que el select no quede en un valor oculto.
         // Los estados "pendiente" y "completada" son exclusivos del admin.
-        if (tarea.status === 'pendiente' || tarea.status === 'completada') {
-            selectEstado.value = 'en_progreso';
-        } else {
-            // "en_progreso" y "pendiente_aprobacion" sí están en el select del usuario
-            selectEstado.value = tarea.status;
-        }
+        const estadosUsuario = ['en_progreso', 'pendiente_aprobacion'];
+        selectEstado.value = estadosUsuario.includes(tarea.status) ? tarea.status : 'en_progreso';
     } else {
         // MODO ADMIN/INSTRUCTOR: todos los campos son editables
         inputTitulo.removeAttribute('readonly');

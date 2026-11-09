@@ -12,7 +12,7 @@
 import {
     buscarUsuarioPorDocumento,
     obtenerTareasDeUsuario,
-    actualizarTarea,
+    cambiarEstadoTarea,
 } from '../api/tareasApi.js';
 
 import {
@@ -195,54 +195,37 @@ export function manejarEdicionTarea(tarea) {
     formulario.onsubmit = async function (event) {
         event.preventDefault();
 
-        const titulo = document.getElementById('editTaskTitle').value.trim();
-        const descripcion = document.getElementById('editTaskDescription').value.trim();
         const estado = document.getElementById('editTaskStatus').value;
         const tareaId = document.getElementById('editTaskId').value;
         const comentEl = document.getElementById('editTaskComment');
         const comentario = comentEl ? comentEl.value.trim() : '';
-
-        const idsUsuarios = Array.isArray(tarea.assignedUsers)
-            ? tarea.assignedUsers.map(u => typeof u === 'object' ? (u.id !== undefined ? u.id : u._id) : u)
-            : [];
-
-        const datosActualizados = {
-            title: titulo || tarea.title,
-            description: descripcion,
-            status: estado,
-            comment: comentario,
-            assignedUsers: idsUsuarios
-        };
 
         const btnSubmit = formulario.querySelector('button[type="submit"]');
         const textoOriginal = btnSubmit ? btnSubmit.textContent : 'Guardar';
         if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Guardando...'; }
 
         try {
-            const tareaActualizada = await actualizarTarea(tareaId, datosActualizados);
+            const tareaActualizada = await cambiarEstadoTarea(tareaId, estado, comentario);
+            const idBuscado = (tarea.id !== undefined && tarea.id !== null) ? tarea.id : tarea._id;
+            const indice = tareasRegistradas.findIndex(
+                t => String(t.id !== undefined && t.id !== null ? t.id : t._id) === String(idBuscado)
+            );
 
-            if (tareaActualizada) {
-                const idBuscado = (tarea.id !== undefined && tarea.id !== null) ? tarea.id : tarea._id;
-                const indice = tareasRegistradas.findIndex(
-                    t => String(t.id !== undefined && t.id !== null ? t.id : t._id) === String(idBuscado)
-                );
-
-                if (indice !== -1) {
-                    tareasRegistradas[indice] = {
-                        ...tareasRegistradas[indice],
-                        ...tareaActualizada,
-                        status: estado,
-                        comment: comentario,
-                    };
-                }
-
-                refrescarTabla();
-                ocultarModalEdicion();
-                await mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
+            if (indice !== -1) {
+                tareasRegistradas[indice] = {
+                    ...tareasRegistradas[indice],
+                    ...(tareaActualizada && typeof tareaActualizada === 'object' ? tareaActualizada : {}),
+                    status: estado,
+                    comment: comentario,
+                };
             }
+
+            refrescarTabla();
+            ocultarModalEdicion();
+            await mostrarNotificacion('Tarea actualizada exitosamente', 'exito');
         } catch (error) {
-            console.error('Error al actualizar tarea:', error);
-            await mostrarNotificacion(error.message || 'Error al actualizar la tarea', 'error');
+            console.error('Error al cambiar estado de tarea:', error);
+            await mostrarNotificacion(error.message || 'Error al cambiar el estado de la tarea', 'error');
         } finally {
             if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = textoOriginal; }
         }
