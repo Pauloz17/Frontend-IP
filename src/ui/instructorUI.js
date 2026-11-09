@@ -113,7 +113,7 @@ export async function inicializarInstructorUI() {
                 description: $('instrNewTaskDescription').value,
                 status: $('instrNewTaskStatus').value,
                 comment: $('instrNewTaskComment').value,
-                assignedUsers: IDs
+                assignedUsers: IDs.map(id => Number(id)).filter(id => Number.isInteger(id))
             };
 
             try {
@@ -130,4 +130,3 @@ export async function inicializarInstructorUI() {
         };
     }
 }
-

@@ -111,7 +111,7 @@ export function inicializarAdminUI() {
                 description: $('newTaskDescription')?.value,
                 status: $('newTaskStatus')?.value,
                 comment: $('newTaskComment')?.value,
-                assignedUsers: IDs
+                assignedUsers: IDs.map(id => Number(id)).filter(id => Number.isInteger(id))
             };
 
             try {
